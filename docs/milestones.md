@@ -1,8 +1,9 @@
 # Milestones
 
 สร้างวันที่ 22 ตุลาคม 2026; ยังไม่กำหนดวันครบกำหนดเพราะยังไม่มีประมาณการจาก implementation
-เอกสารนี้เป็น milestone tracker ใน repository ยังไม่ได้สร้าง GitHub milestones เพราะยังไม่มี remote
-ใช้ชื่อและคำอธิบายด้านล่างสร้างบน GitHub ได้เมื่อทราบ repository ปลายทาง โดยไม่สร้างซ้ำชื่อเดิม
+สร้าง GitHub milestones แล้วใน origin `https://github.com/s-papanya/POS-Lite.git`
+ตรวจผ่านหน้า GitHub แล้วว่าครบ 8 รายการ Open และ 0 Closed ไม่มี due date
+ดู [รายการ milestones บน GitHub](https://github.com/s-papanya/POS-Lite/milestones)
 งานย่อยและรายละเอียดตรวจรับอยู่ใน [implementation-plan.md](implementation-plan.md)
 สถานะ complete ต้องมีหลักฐานตาม [acceptance-scenarios.md](acceptance-scenarios.md)
 
@@ -33,7 +34,22 @@ API test script ยังเป็น placeholder ที่จบด้วย fa
 ตรวจเอกสารผ่าน: 6 เอกสารบังคับ, 16 local links, 6 core paths, 186 schema refs และเลขตัวอย่าง
 ยังไม่ได้รัน business tests/PostgreSQL/Android; ผลนี้ยังไม่ทำให้ M1 ปิดได้
 
-## การใช้กับ GitHub เมื่อเชื่อม remote
+## GitHub milestones ที่สร้างแล้ว
+
+| แผน | หมายเลข GitHub | ลิงก์ |
+|---|---|---|
+| M0 | 1 | [Product & Domain Design](https://github.com/s-papanya/POS-Lite/milestone/1) |
+| M1 | 2 | [Foundation & Secure Access](https://github.com/s-papanya/POS-Lite/milestone/2) |
+| M2 | 3 | [Catalog, Accounts & POS](https://github.com/s-papanya/POS-Lite/milestone/3) |
+| M3 | 4 | [Supplemental Sales & Reconciliation](https://github.com/s-papanya/POS-Lite/milestone/4) |
+| M4 | 5 | [Expenses & Money Operations](https://github.com/s-papanya/POS-Lite/milestone/5) |
+| M5 | 6 | [Refunds & Audited Corrections](https://github.com/s-papanya/POS-Lite/milestone/6) |
+| M6 | 7 | [Cash Closing & Reopening](https://github.com/s-papanya/POS-Lite/milestone/7) |
+| M7 | 8 | [Reports & Operational Readiness](https://github.com/s-papanya/POS-Lite/milestone/8) |
+
+ทุกรายการมี scope/dependencies ที่เกี่ยวข้องและเกณฑ์ปิดตามแผน ไม่ได้สร้าง issues เพิ่มในรอบนี้
+
+## การดูแลต่อบน GitHub
 
 อ่าน milestones ที่มีอยู่ก่อน สร้างเฉพาะชื่อที่ยังไม่มี พร้อม scope/เกณฑ์ปิดตามตาราง
 M0 ยังไม่ควร close จน P4/P5 ยืนยัน; milestone อื่นเป็น OPEN
