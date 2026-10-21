@@ -3,6 +3,12 @@ node_modules/
 dist/
 build/
 coverage/
+.vite/
+.vitest/
+.nyc_output/
+playwright-report/
+test-results/
+.eslintcache
 *.tsbuildinfo
 __pycache__/
 *.py[cod]
@@ -21,6 +27,16 @@ __pycache__/
 Thumbs.db
 .idea/
 .vscode/
+
+# Temporary project work (keep shared agent instructions and skills tracked)
+/.tmp/
+/.skill-work/
+/.skill-drafts/
+/.skill-validation-deps/
+.agents/.cache/
+.claude/settings.local.json
+.claude/cache/
+.claude/projects/
 
 # Local database state and backups
 .postgres/
