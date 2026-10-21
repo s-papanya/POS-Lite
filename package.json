@@ -1,0 +1,24 @@
+{
+  "name": "pos-lite",
+  "version": "1.0.0",
+  "description": "ระบบบริหารร้านก๋วยเตี๋ยวและเบเกอรี่สำหรับครอบครัว ออกแบบให้ใช้บน Android เป็นหลัก",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "keywords": [],
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "npm run dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "build": "npm run build --workspaces --if-present"
+  }
+}

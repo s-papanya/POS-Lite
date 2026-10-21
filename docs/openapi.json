@@ -1,0 +1,1812 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Family Store Manager core design contract",
+    "version": "0.1.0",
+    "description": "Phase 0 core contract only. Full endpoint inventory in api-contracts.md. No runtime implementation."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "security": [
+    {
+      "sessionCookie": []
+    }
+  ],
+  "paths": {
+    "/stores/{storeId}/sales": {
+      "post": {
+        "operationId": "createSale",
+        "x-permissions": [
+          "OWNER",
+          "MANAGER",
+          "STAFF"
+        ],
+        "x-transaction": "Atomic source/ledger/audit/idempotency with row locks",
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Committed result / original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Sale"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stores/{storeId}/sales-reconciliations/preview": {
+      "post": {
+        "operationId": "previewReconciliation",
+        "x-permissions": [
+          "OWNER",
+          "MANAGER"
+        ],
+        "x-transaction": "Consistent read snapshot",
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconciliationPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Read-only snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ReconciliationPreview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stores/{storeId}/sales-reconciliations": {
+      "post": {
+        "operationId": "confirmReconciliation",
+        "x-permissions": [
+          "OWNER",
+          "MANAGER"
+        ],
+        "x-transaction": "Atomic source/ledger/audit/idempotency with row locks",
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconciliationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Committed result / original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ReconciliationResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stores/{storeId}/sales/{saleId}/refunds": {
+      "post": {
+        "operationId": "createRefund",
+        "x-permissions": [
+          "OWNER"
+        ],
+        "x-transaction": "Atomic source/ledger/audit/idempotency with row locks",
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "saleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Committed result / original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RefundResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stores/{storeId}/cash-closings/preview": {
+      "post": {
+        "operationId": "previewClosing",
+        "x-permissions": [
+          "OWNER",
+          "MANAGER"
+        ],
+        "x-transaction": "Consistent read snapshot",
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosingPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Read-only snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ClosingPreview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stores/{storeId}/cash-closings": {
+      "post": {
+        "operationId": "closeDay",
+        "x-permissions": [
+          "OWNER",
+          "MANAGER"
+        ],
+        "x-transaction": "Atomic source/ledger/audit/idempotency with row locks",
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Committed result / original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ClosingResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-session"
+      }
+    },
+    "schemas": {
+      "Money": {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]{0,12})$",
+        "description": "THB satang. Exact maximum 9000000000000 checked by service."
+      },
+      "SignedMoney": {
+        "type": "string",
+        "pattern": "^(0|-?[1-9][0-9]{0,12})$",
+        "description": "Signed net THB satang; absolute maximum 9000000000000."
+      },
+      "Id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "Date": {
+        "type": "string",
+        "format": "date"
+      },
+      "Time": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "Text": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      },
+      "Revision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647
+      },
+      "Version": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "Quantity": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 999
+      },
+      "Channel": {
+        "type": "string",
+        "enum": [
+          "CASH",
+          "TRANSFER"
+        ]
+      },
+      "Boolean": {
+        "type": "boolean"
+      },
+      "NullableMoney": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Money"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "NullableText": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Text"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "SaleItemInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "productId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "expectedVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "quantity": {
+            "$ref": "#/components/schemas/Quantity"
+          }
+        },
+        "required": [
+          "productId",
+          "expectedVersion",
+          "quantity"
+        ]
+      },
+      "Discount": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "FIXED"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "kind",
+              "amount"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "PERCENT"
+              },
+              "basisPoints": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              }
+            },
+            "required": [
+              "kind",
+              "basisPoints"
+            ]
+          }
+        ]
+      },
+      "PaymentInput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "accountId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "channel": {
+                "type": "string",
+                "const": "CASH"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "tendered": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "accountId",
+              "channel",
+              "amount",
+              "tendered"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "accountId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "channel": {
+                "type": "string",
+                "const": "TRANSFER"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "accountId",
+              "channel",
+              "amount"
+            ]
+          }
+        ]
+      },
+      "SaleRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaleItemInput"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "discount": {
+            "$ref": "#/components/schemas/Discount"
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentInput"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "businessDate",
+          "occurredAt",
+          "items",
+          "discount",
+          "payments"
+        ]
+      },
+      "SaleItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "productId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "nameSnapshot": {
+            "$ref": "#/components/schemas/Text"
+          },
+          "unitPrice": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "productVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "quantity": {
+            "$ref": "#/components/schemas/Quantity"
+          },
+          "lineTotal": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "productId",
+          "nameSnapshot",
+          "unitPrice",
+          "productVersion",
+          "quantity",
+          "lineTotal"
+        ]
+      },
+      "Payment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "tendered": {
+            "$ref": "#/components/schemas/NullableMoney"
+          },
+          "change": {
+            "$ref": "#/components/schemas/NullableMoney"
+          }
+        },
+        "required": [
+          "id",
+          "accountId",
+          "channel",
+          "amount",
+          "tendered",
+          "change"
+        ]
+      },
+      "Sale": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "reference": {
+            "$ref": "#/components/schemas/Text"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "POS",
+              "SUPPLEMENTAL",
+              "RECONCILIATION"
+            ]
+          },
+          "gross": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "discount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "net": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaleItem"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "dayRevision": {
+            "$ref": "#/components/schemas/Revision"
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "kind",
+          "gross",
+          "discount",
+          "net",
+          "items",
+          "payments",
+          "dayRevision"
+        ]
+      },
+      "Target": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "accountId",
+          "channel",
+          "amount"
+        ]
+      },
+      "ReconciliationPreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Target"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "businessDate",
+          "targets"
+        ]
+      },
+      "ReconciliationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "expectedRevision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Target"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Text"
+          }
+        },
+        "required": [
+          "businessDate",
+          "occurredAt",
+          "expectedRevision",
+          "targets",
+          "reason"
+        ]
+      },
+      "ReconciliationLine": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "recorded": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "target": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "delta": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "requiresReview": {
+            "$ref": "#/components/schemas/Boolean"
+          }
+        },
+        "required": [
+          "accountId",
+          "channel",
+          "recorded",
+          "target",
+          "delta",
+          "requiresReview"
+        ]
+      },
+      "AccountEffect": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "delta": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "accountId",
+          "delta"
+        ]
+      },
+      "ReconciliationPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReconciliationLine"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "netSales": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "accountEffects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountEffect"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "revision",
+          "lines",
+          "netSales",
+          "accountEffects"
+        ]
+      },
+      "ReconciliationResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "createdSales": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sale"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "dayRevision": {
+            "$ref": "#/components/schemas/Revision"
+          }
+        },
+        "required": [
+          "id",
+          "createdSales",
+          "dayRevision"
+        ]
+      },
+      "Payout": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "accountId",
+          "amount"
+        ]
+      },
+      "RefundRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Text"
+          },
+          "payouts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payout"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "businessDate",
+          "occurredAt",
+          "reason",
+          "payouts"
+        ]
+      },
+      "RefundAllocation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "salePaymentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "salePaymentId",
+          "amount"
+        ]
+      },
+      "RefundResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "reference": {
+            "$ref": "#/components/schemas/Text"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "allocations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefundAllocation"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "movements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountEffect"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "dayRevision": {
+            "$ref": "#/components/schemas/Revision"
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "amount",
+          "allocations",
+          "movements",
+          "dayRevision"
+        ]
+      },
+      "ClosingPreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          }
+        },
+        "required": [
+          "businessDate"
+        ]
+      },
+      "CashAccount": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "opening": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "accountId",
+          "opening",
+          "expected"
+        ]
+      },
+      "SalesBucket": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "netSales": {
+            "$ref": "#/components/schemas/SignedMoney"
+          }
+        },
+        "required": [
+          "accountId",
+          "channel",
+          "netSales"
+        ]
+      },
+      "ClosingPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "salesByBucket": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalesBucket"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "cashAccounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashAccount"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "revision",
+          "salesByBucket",
+          "cashAccounts"
+        ]
+      },
+      "CashCount": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "counted": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Text"
+          }
+        },
+        "required": [
+          "accountId",
+          "counted"
+        ]
+      },
+      "ClosingRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "expectedRevision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "counts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashCount"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "businessDate",
+          "expectedRevision",
+          "counts"
+        ]
+      },
+      "ClosingLine": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "counted": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "variance": {
+            "$ref": "#/components/schemas/SignedMoney"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/NullableText"
+          }
+        },
+        "required": [
+          "accountId",
+          "expected",
+          "counted",
+          "variance",
+          "reason"
+        ]
+      },
+      "ClosingResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "state": {
+            "type": "string",
+            "const": "CLOSED"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosingLine"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "dayRevision": {
+            "$ref": "#/components/schemas/Revision"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "state",
+          "lines",
+          "dayRevision"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "$ref": "#/components/schemas/Text"
+              },
+              "message": {
+                "$ref": "#/components/schemas/Text"
+              },
+              "requestId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "requestId"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    }
+  }
+}
