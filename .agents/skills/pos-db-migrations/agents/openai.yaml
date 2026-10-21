@@ -1,0 +1,4 @@
+interface:
+  display_name: "POS-Lite DB Migrations"
+  short_description: "Preserve PostgreSQL data across schema changes"
+  default_prompt: "Use $pos-db-migrations for this POS-Lite task, checking current code and project rules first."

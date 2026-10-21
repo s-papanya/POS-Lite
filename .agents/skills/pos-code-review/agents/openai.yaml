@@ -1,0 +1,4 @@
+interface:
+  display_name: "POS-Lite Code Review"
+  short_description: "Review financial correctness, access and regressions"
+  default_prompt: "Use $pos-code-review for this POS-Lite task, checking current code and project rules first."

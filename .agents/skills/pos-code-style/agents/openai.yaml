@@ -1,0 +1,4 @@
+interface:
+  display_name: "POS-Lite Code Style"
+  short_description: "TypeScript naming, imports and local lint conventions"
+  default_prompt: "Use $pos-code-style for this POS-Lite task, checking current code and project rules first."

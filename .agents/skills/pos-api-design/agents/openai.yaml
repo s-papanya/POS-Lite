@@ -1,0 +1,4 @@
+interface:
+  display_name: "POS-Lite API Design"
+  short_description: "REST contracts, sessions and idempotent mutations"
+  default_prompt: "Use $pos-api-design for this POS-Lite task, checking current code and project rules first."

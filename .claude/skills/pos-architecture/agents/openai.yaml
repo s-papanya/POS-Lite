@@ -1,0 +1,4 @@
+interface:
+  display_name: "POS-Lite Architecture"
+  short_description: "Module boundaries and atomic domain transaction flows"
+  default_prompt: "Use $pos-architecture for this POS-Lite task, checking current code and project rules first."

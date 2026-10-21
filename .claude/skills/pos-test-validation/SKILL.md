@@ -1,0 +1,53 @@
+---
+name: pos-test-validation
+description: Design, implement, or audit POS-Lite unit and PostgreSQL integration tests for financial invariants, authorization, rollback and concurrency. Use for test work or evaluating test claims, not every documentation edit.
+---
+
+# POS-Lite test validation
+
+Read [project state](../../../docs/project-engineering.md) and the affected [acceptance A–P](../../../docs/acceptance-scenarios.md).
+Inspect package.json/test configs before choosing commands. Current API test is a failing placeholder.
+Vitest/Supertest/PostgreSQL are the selected plan, not an installed suite. Do not introduce Jest, PyTest, Cypress
+or a second runner just because a generic example uses them. Python design checks are documentation checks.
+
+## Select the level
+
+- Unit: pure money/discount rounding, Bangkok date classification, schema validation, permission decisions.
+  Use Vitest describe/it, arrange/act/assert and English behavior names. Proposed location: colocated `*.test.ts`.
+  Use BigInt satang internally and exact money strings at HTTP boundaries.
+- API integration: Supertest against the exported Express app, real PostgreSQL migrated from scratch,
+  authenticated cookie/CSRF flow and realistic memberships. Proposed location:
+  `apps/api/test/integration/*.integration.test.ts`.
+- DB integration: actual composite FK/check/unique/deferred constraints, rollback, persisted idempotency,
+  competing connections and row locks. SQLite/mocked repositories cannot prove these properties.
+- UI: use installed component/browser tooling when present; React Testing Library with Vitest is a future candidate,
+  not installed today. Test Thai user-visible behavior, labels and pending states; Android manual evidence is separate.
+  Don't install an E2E framework for an unrelated fix.
+
+For first test-infrastructure work, add a real runner/config/script within requested scope.
+Never replace missing tests with a successful placeholder or claim an absent command passed.
+
+## Fixtures and mocks
+
+Use per-test factories for two businesses/two stores, accounts, users and Bangkok dates.
+Generate unique IDs; isolate workers by database/schema as supported. Separate clients are necessary for concurrency;
+an outer rollback transaction cannot isolate application commits through another pool connection.
+Before setup/cleanup, verify a dedicated disposable test connection, including host/instance identity.
+Never trust a database name alone or clean up an arbitrary DATABASE_URL pointing to staging/production.
+
+Use vi.fn/vi.spyOn for clocks, generated IDs and external network adapters when relevant; reset after each case.
+Do not mock pricing/permission/ledger logic in the integration case claiming to verify it.
+Do not mock transaction APIs, row locks or persistence in concurrency/rollback proofs.
+Use explicit timestamps or fake timers for time-dependent unit logic, not globally frozen DB concurrency.
+Failure injection must fail before real commit and assert no partial source/payment/movement/audit/key remains.
+
+## Meaningful evidence
+
+Map the change to A–P and add the smallest useful regression test. For new money-write paths verify same-key
+replay after lost response, changed-payload conflict, wrong-store denial, CLOSED-day denial, consistent source/ledger
+and rollback. For reconciliation/closing/refund, use deterministic barriers on separate connections to exercise
+both lock orders; no sleep-based races. Assert final balances, row counts, IDs and references rather than private call order.
+Include shared-bank deduplication, negative refund days and original receiving account vs actual payout account when affected.
+
+Report commands, DB version/fixtures, pass/fail/unrun cases and limits in Thai.
+Build/lint/schema checks don't prove application tests, DB safety or production readiness.

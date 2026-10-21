@@ -1,0 +1,4 @@
+interface:
+  display_name: "POS-Lite Git Workflow"
+  short_description: "Focused branches, Conventional Commits and PRs"
+  default_prompt: "Use $pos-git-workflow for this POS-Lite task, checking current code and project rules first."

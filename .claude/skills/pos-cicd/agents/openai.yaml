@@ -1,0 +1,4 @@
+interface:
+  display_name: "POS-Lite CI/CD"
+  short_description: "Build gates, env checks and safe release readiness"
+  default_prompt: "Use $pos-cicd for this POS-Lite task, checking current code and project rules first."

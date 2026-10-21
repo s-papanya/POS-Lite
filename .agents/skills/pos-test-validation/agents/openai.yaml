@@ -1,0 +1,4 @@
+interface:
+  display_name: "POS-Lite Tests"
+  short_description: "Unit and real PostgreSQL integration test guidance"
+  default_prompt: "Use $pos-test-validation for this POS-Lite task, checking current code and project rules first."

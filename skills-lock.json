@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "react-vite-best-practices": {
+      "source": "asyrafhussin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-vite-best-practices/SKILL.md",
+      "computedHash": "feaca42228615890d66c5d79e83aac06603393648eac2d8b722da9d3012538bb"
+    }
+  }
+}

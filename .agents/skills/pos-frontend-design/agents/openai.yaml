@@ -1,0 +1,4 @@
+interface:
+  display_name: "POS-Lite Frontend Design"
+  short_description: "Thai mobile flows, tokens and reusable components"
+  default_prompt: "Use $pos-frontend-design for this POS-Lite task, checking current code and project rules first."
