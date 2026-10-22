@@ -9,7 +9,7 @@
 
 ## สถานะปัจจุบัน
 
-**F1/F2 และ S1a API เมนู implement แล้ว — ยังไม่เปิดบันทึกธุรกรรมร้านจริง**
+**F1/F2, S1a เมนู และ S1b บัญชี/ยอดตั้งต้น implement แล้ว — ยังไม่เปิดขายจริง**
 
 | ส่วน | สิ่งที่มีตอนนี้ |
 |---|---|
@@ -17,13 +17,14 @@
 | Frontend | หน้าเข้าสู่ระบบภาษาไทย เลือกร้านตามสิทธิ์ ออกจากระบบ และตรวจการเชื่อมต่อ |
 | Backend | Cookie sessions, CSRF/Origin, DB-backed rate limit, revoke/expiry และ store isolation |
 | เมนู/ราคา | API เพิ่ม/แก้/ปิดเมนูสำหรับ OWNER พร้อม version, audit และ idempotency; ยังไม่มีหน้าจัดเมนู |
-| ฐานข้อมูล | PostgreSQL + Drizzle migrations 10 ตาราง, runtime role แยกจาก admin, seed OWNER สองบัญชี/สองร้าน |
+| ฐานข้อมูล | PostgreSQL + Drizzle migrations 14 ตาราง, runtime role แยกจาก admin, seed OWNER สองบัญชี/สองร้าน |
+| บัญชี | API สร้าง CASH/BANK ผูกร้าน และยอดตั้งต้นครั้งเดียวลง ledger; ยังไม่มีหน้าจัดบัญชี |
 | Tooling | npm workspaces/lockfile เดียว, shared contracts, Vitest/Supertest, build/typecheck/lint/test |
 | ระบบใช้งานจริง | ยังไม่มี POS, ledger, ปิดวัน หรือรายงาน |
 
 P1–P5 ยืนยันแล้ว; F2 ผ่าน local validation แล้ว ยังไม่ได้ปิด milestone บน GitHub
 ดู [ผลตรวจ F1](docs/foundation-validation.md) และ [F2/วิธีใช้ฐานข้อมูล](docs/access-validation.md)
-งานล่าสุด: [S1a API เมนูและผลทดสอบ](docs/catalog-validation.md); S1 ยังเหลือบัญชี/ledger/วันทำการ
+ดู [S1a API เมนู](docs/catalog-validation.md) และ [S1b บัญชี/ยอดตั้งต้น](docs/accounts-validation.md); S1 ยังเหลือวันทำการ/day openings
 ดูสถานะและเงื่อนไขปิดงานใน [milestones.md](docs/milestones.md)
 
 ## ขอบเขต MVP ที่จะพัฒนา

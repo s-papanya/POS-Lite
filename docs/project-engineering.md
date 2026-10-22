@@ -2,14 +2,15 @@
 
 ข้อตกลงสำหรับพัฒนาต่อและสถานะล่าสุดหลัง F2; ผลตรวจ local อยู่ใน [access-validation.md](access-validation.md)
 เพิ่ม S1a product API/optimistic version/audit/idempotency แล้ว ดู [catalog-validation.md](catalog-validation.md)
+S1b account/opening/ledger API เพิ่มแล้ว ดู [accounts-validation.md](accounts-validation.md); ยังเหลือวันทำการ
 skills อยู่ใน `.agents/skills` ใช้เฉพาะประเภทงานที่เกี่ยวข้อง ไม่โหลดทุก skill ทุกครั้ง
 ตรวจ package/config และผลรันใหม่ก่อนอ้างสถานะ หากโค้ดต่างจากกฎธุรกิจที่ตกลงให้รายงาน gap ไม่แก้กฎตาม bug
 
-## หลักฐานปัจจุบัน — 22 ตุลาคม 2026
+## หลักฐานปัจจุบัน — 23 ตุลาคม 2026
 
 | เรื่อง | มีจริง | แผนที่ยังไม่ implement |
 |---|---|---|
-| Runtime | React/Vite/TypeScript, Express, Zod, Pino, pg/Drizzle, Argon2id; local migrations/seed และ cookie auth | บัญชี/วันทำการ/ledger/POS |
+| Runtime | React/Vite/TypeScript, Express, Zod, Pino, pg/Drizzle, Argon2id; auth/catalog/accounts/opening ledger | วันทำการ/debit ledger/POS |
 | Tests | Vitest5/Supertest; config/HTTP/password และ PostgreSQL auth/constraints/rollback integration | financial transactions/concurrency A–P |
 | CI/CD | ยังไม่มี workflows หรือ deployment manifests | CI, staging/production pipeline, backup/restore |
 | Lint | Root ESLint สำหรับ API/tests/packages; เว็บ Hooks/Fast Refresh; root build/typecheck/lint/test | CI quality gates |

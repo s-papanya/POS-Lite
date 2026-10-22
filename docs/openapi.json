@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Family Store Manager core design contract",
-    "version": "0.4.0",
-    "description": "F1 health, F2 auth/store and S1a product endpoints implemented. Six financial paths remain design only. See api-contracts.md."
+    "version": "0.5.0",
+    "description": "F1/F2, S1a products and S1b accounts/opening implemented. Six sales/closing paths remain design only. See api-contracts.md."
   },
   "servers": [
     {
@@ -2214,6 +2214,566 @@
           }
         }
       }
+    },
+    "/accounts": {
+      "post": {
+        "operationId": "createAccount",
+        "x-implemented": true,
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Committed / original replay; lists expose no balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-permissions": [
+          "OWNER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounts/{accountId}": {
+      "patch": {
+        "operationId": "updateAccount",
+        "x-implemented": true,
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed / original replay; lists expose no balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-permissions": [
+          "OWNER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUpdateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounts/{accountId}/opening": {
+      "post": {
+        "operationId": "openAccount",
+        "x-implemented": true,
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Committed / original replay; lists expose no balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOpeningResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-permissions": [
+          "OWNER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountOpeningRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stores/{storeId}/accounts": {
+      "get": {
+        "operationId": "listStoreAccounts",
+        "x-implemented": true,
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed / original replay; lists expose no balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-permissions": [
+          "OWNER",
+          "MANAGER",
+          "STAFF"
+        ]
+      }
     }
   },
   "components": {
@@ -3449,6 +4009,254 @@
                   "string",
                   "null"
                 ]
+              }
+            },
+            "required": [
+              "nextCursor"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "page"
+        ]
+      },
+      "Account": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANK"
+            ]
+          },
+          "active": {
+            "$ref": "#/components/schemas/Boolean"
+          },
+          "storeIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "active",
+          "storeIds"
+        ]
+      },
+      "AccountCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANK"
+            ]
+          },
+          "storeIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "storeIds"
+        ],
+        "if": {
+          "properties": {
+            "type": {
+              "const": "CASH"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "storeIds": {
+              "maxItems": 1
+            }
+          }
+        }
+      },
+      "AccountUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "active": {
+            "$ref": "#/components/schemas/Boolean"
+          }
+        },
+        "required": [],
+        "anyOf": [
+          {
+            "required": [
+              "name"
+            ]
+          },
+          {
+            "required": [
+              "active"
+            ]
+          }
+        ]
+      },
+      "AccountOpeningRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "storeId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "cutoverAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Text"
+          }
+        },
+        "required": [
+          "storeId",
+          "amount",
+          "cutoverAt",
+          "reason"
+        ]
+      },
+      "AccountOpening": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "storeId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "cutoverAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Text"
+          }
+        },
+        "required": [
+          "id",
+          "accountId",
+          "storeId",
+          "amount",
+          "cutoverAt",
+          "reason"
+        ]
+      },
+      "AccountResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Account"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "AccountOpeningResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AccountOpening"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "AccountListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "CASH",
+                    "BANK"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "type"
+              ]
+            }
+          },
+          "page": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
               }
             },
             "required": [

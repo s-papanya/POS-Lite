@@ -203,8 +203,49 @@ for path, method, operation, request, response in [
         op["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref(request)}}}
     paths.setdefault(path, {})[method] = op
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.4.0",
-    "description": "F1 health, F2 auth/store and S1a product endpoints implemented. Six financial paths remain design only. See api-contracts.md."},
+account_name = {"type": "string", "minLength": 1, "maxLength": 120}
+account_type = {"type": "string", "enum": ["CASH", "BANK"]}
+store_ids = {"type": "array", "items": ref("Id"), "minItems": 1, "maxItems": 100, "uniqueItems": True}
+SCHEMAS["Account"] = obj({"id": ref("Id"), "name": account_name, "type": account_type, "active": ref("Boolean"), "storeIds": store_ids})
+SCHEMAS["AccountCreateRequest"] = obj({"name": account_name, "type": account_type, "storeIds": store_ids})
+SCHEMAS["AccountCreateRequest"].update({"if": {"properties": {"type": {"const": "CASH"}}},
+    "then": {"properties": {"storeIds": {"maxItems": 1}}}})
+SCHEMAS["AccountUpdateRequest"] = obj({"name": account_name, "active": ref("Boolean")}, ("name", "active"))
+SCHEMAS["AccountUpdateRequest"]["anyOf"] = [{"required": [field]} for field in ("name", "active")]
+SCHEMAS["AccountOpeningRequest"] = obj({"storeId": ref("Id"), "amount": ref("Money"), "cutoverAt": ref("Time"), "reason": ref("Text")})
+SCHEMAS["AccountOpening"] = obj({"id": ref("Id"), "accountId": ref("Id"), "storeId": ref("Id"), "amount": ref("Money"), "cutoverAt": ref("Time"), "reason": ref("Text")})
+SCHEMAS["AccountResponse"] = obj({"data": ref("Account")})
+SCHEMAS["AccountOpeningResponse"] = obj({"data": ref("AccountOpening")})
+SCHEMAS["AccountListResponse"] = obj({"data": {"type": "array", "items": obj({"id": ref("Id"), "name": account_name, "type": account_type})},
+    "page": obj({"nextCursor": {"type": ["string", "null"], "format": "uuid"}})})
+for path, method, operation, request, response in [
+    ("/accounts", "post", "createAccount", "AccountCreateRequest", "AccountResponse"),
+    ("/accounts/{accountId}", "patch", "updateAccount", "AccountUpdateRequest", "AccountResponse"),
+    ("/accounts/{accountId}/opening", "post", "openAccount", "AccountOpeningRequest", "AccountOpeningResponse"),
+    ("/stores/{storeId}/accounts", "get", "listStoreAccounts", None, "AccountListResponse"),
+]:
+    params = [{"name": field, "in": "path", "required": True, "schema": ref("Id")}
+              for field in ("accountId", "storeId") if "{" + field + "}" in path]
+    if method == "get":
+        params += [{"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}},
+                   {"name": "cursor", "in": "query", "schema": ref("Id")}]
+    else:
+        params += [{"name": "X-CSRF-Token", "in": "header", "required": True, "schema": ref("Text")},
+                   {"name": "Origin", "in": "header", "required": True, "schema": {"type": "string", "format": "uri"}},
+                   {"name": "Idempotency-Key", "in": "header", "required": True, "schema": ref("Id")}]
+    responses = {"201" if method == "post" else "200": {"description": "Committed / original replay; lists expose no balance",
+        "content": {"application/json": {"schema": ref(response)}}}}
+    for code in ("400", "401", "403", "404", "409", "413", "422", "500"):
+        responses[code] = {"description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {"application/json": {"schema": ref("Error")}}}
+    op = {"operationId": operation, "x-implemented": True, "parameters": params, "responses": responses,
+          "x-permissions": ["OWNER"] if request else ["OWNER", "MANAGER", "STAFF"]}
+    if request:
+        op["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref(request)}}}
+    paths[path] = {method: op}
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.5.0",
+    "description": "F1/F2, S1a products and S1b accounts/opening implemented. Six sales/closing paths remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":
