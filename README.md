@@ -9,17 +9,19 @@
 
 ## สถานะปัจจุบัน
 
-**อยู่ระหว่างออกแบบและวาง Foundation — ยังไม่พร้อมใช้บันทึกธุรกรรมร้านจริง**
+**F1 Foundation implement แล้ว — ยังไม่พร้อมใช้บันทึกธุรกรรมร้านจริง**
 
 | ส่วน | สิ่งที่มีตอนนี้ |
 |---|---|
 | การออกแบบ | Requirements, กฎธุรกิจ, ERD, สิทธิ์, API contracts, UX flows และกรณีตรวจรับ A–P |
-| Frontend | React + TypeScript + Vite starter; ยังเป็นหน้าตัวอย่างของ Vite |
-| Backend | Express + TypeScript และ `GET /api/v1/health` |
-| ฐานข้อมูล | ออกแบบ PostgreSQL แล้ว; ยังไม่มี Compose, migrations หรือ seed |
+| Frontend | หน้าเริ่มต้นภาษาไทย ตรวจการเชื่อมต่อ API จริง พร้อม retry/error/offline states |
+| Backend | Express, Zod config validation, Pino request logs, request IDs และ HTTP error envelope |
+| ฐานข้อมูล | Docker Compose PostgreSQL local พร้อม healthcheck; ยังไม่มี business migrations หรือ seed |
+| Tooling | npm workspaces/lockfile เดียว, shared contracts, Vitest/Supertest, build/typecheck/lint/test |
 | ระบบใช้งานจริง | ยังไม่มี authentication, POS, ledger, ปิดวัน หรือรายงาน |
 
-M0 ส่งมอบเอกสารแล้วและรอยืนยันนโยบาย P4/P5 ส่วน M1 มีโครงเริ่มต้นแต่ยังไม่ครบเกณฑ์
+M0 ยังรอยืนยันนโยบาย P4/P5 ส่วน M1 ยังเปิดเพราะเหลือ F2 authentication/store access
+ดู [ผลตรวจ F1 และข้อจำกัด](docs/foundation-validation.md)
 ดูสถานะและเงื่อนไขปิดงานใน [milestones.md](docs/milestones.md)
 
 ## ขอบเขต MVP ที่จะพัฒนา
@@ -36,29 +38,35 @@ MVP ใช้งานออนไลน์เป็นหลัก ส่วน
 
 ## เริ่มรันบนเครื่อง
 
-ใช้ Node.js และ npm โดยเครื่องที่ตรวจโครงปัจจุบันใช้ Node.js `24.20.0` / npm `12.2.0`
+ใช้ Node.js 24.x และ npm 12.x; เครื่องที่ตรวจใช้ `24.20.0` / `12.2.0`
 Python 3 ใช้เฉพาะตรวจเอกสาร ไม่จำเป็นสำหรับการเปิด web/API starter
-ยังไม่ต้องเตรียม PostgreSQL เพื่อรันโครงปัจจุบัน
+ใช้ Docker Desktop หากต้องการเปิด PostgreSQL local; API health ยังไม่เชื่อมฐานข้อมูลใน F1
 
 รันจากโฟลเดอร์หลักของ repository:
 
 ```powershell
 npm ci
+Copy-Item .env.example .env
+# เปลี่ยน POSTGRES_PASSWORD ใน .env เป็นรหัสผ่าน local ของคุณก่อนเปิดฐานข้อมูล
+npm run db:up
 npm run dev
 ```
 
-ใช้คำสั่งเดียวกันได้บน macOS / Linux
+บน macOS / Linux ใช้ `cp .env.example .env` แทน Copy-Item; ขั้นอื่นเหมือนกัน
+หากมี .env แล้วให้รักษาค่าเดิม ไม่คัดลอกทับ และไม่ commit รหัสผ่าน
 
 เปิดหน้าเว็บตาม URL ที่ Vite แสดงใน terminal โดยปกติเป็น [localhost:5173](http://localhost:5173)
 ตรวจ API ได้ที่ [127.0.0.1:3000/api/v1/health](http://127.0.0.1:3000/api/v1/health):
 
 ```json
-{"status":"ok"}
+{"data":{"status":"ok","service":"family-store-manager-api"}}
 ```
 
 API และ Vite proxy ปัจจุบันใช้พอร์ต `3000` ตรงกัน
 หากตั้ง environment variable `PORT` เป็นค่าอื่น ต้องปรับ proxy ใน `apps/web/vite.config.ts` ให้ตรงกัน
 API bind ที่ `127.0.0.1` การเปิดจากมือถือผ่านเครือข่ายยังต้องตั้งค่า dev เพิ่ม
+API โหลด .env ที่ root; ค่าจาก shell มีลำดับสูงกว่าไฟล์
+health หมายถึง process ทำงาน ไม่ได้ยืนยันฐานข้อมูล/login/POS
 
 ## คำสั่งที่มีอยู่
 
@@ -67,22 +75,31 @@ API bind ที่ `127.0.0.1` การเปิดจากมือถือ�
 | `npm run dev` | เปิด API และเว็บพร้อมกัน |
 | `npm run dev:api` | เปิด API พร้อม reload เมื่อแก้ไฟล์ |
 | `npm run dev:web` | เปิด Vite dev server |
-| `npm run typecheck -w apps/api` | ตรวจ TypeScript ของ API |
-| `npm run lint -w apps/web` | ตรวจ ESLint ของเว็บ |
-| `npm run build -w apps/web` | ตรวจ TypeScript และ build เว็บ |
-| `npm run build` | เรียก build ของ workspace ที่มี script |
+| `npm run typecheck` | ตรวจ TypeScript ของ API/tests และเว็บ โดย build shared packages ก่อน |
+| `npm run lint` | ตรวจ API/tests/shared packages และเว็บ |
+| `npm test` | รัน Vitest/Supertest ของ Foundation |
+| `npm run build` | build shared/validation → API → เว็บ แบบไม่ข้าม workspace |
+| `npm run start -w api` | รัน API จาก dist หลัง build |
+| `npm run db:up` | เปิด PostgreSQL local และรอ healthcheck |
+| `npm run db:status` | ดูสถานะ container |
+| `npm run db:down` | หยุด container โดยเก็บ named volume ไว้ |
 
-**ข้อจำกัดของ scripts:** root build ยังข้าม API เพราะ API ไม่มี build script
-และ API `start` ต้องมี `dist/server.js` ก่อน จึงยังไม่ใช่ขั้นตอน production ที่พร้อมใช้
-API `test` ยังเป็น placeholder ที่จบด้วย error; ยังไม่มี automated business test suite
-ต้องเติม scripts และจัด lockfile ให้เหลือ root เดียวในก้อน F1
+API tests ปัจจุบันตรวจ config และ HTTP boundary ยังไม่ใช่ acceptance A–P ของธุรกรรมจริง
+หากแก้ shared/validation ระหว่าง dev ให้ restart `npm run dev` เพื่อ build packages ใหม่
+คำสั่ง migration/seed และ CI/deployment pipeline จะเพิ่มเมื่อทำ F2/งานที่เกี่ยวข้อง ไม่ใส่ noop แทน
+PostgreSQL local ฟังที่ `127.0.0.1:5433`, DB `pos_lite_dev`, user `pos_lite_local`
+อย่าใช้ `down -v` หากต้องการเก็บข้อมูล; เปลี่ยน password ใน .env ไม่เปลี่ยนรหัสของ volume ที่ initialize แล้ว
 
 ## โครงสร้าง repository
 
 ```text
 apps/
-  api/                  Express API starter
-  web/                  React/Vite starter
+  api/                  Express config/logging/error boundary และ tests
+  web/                  React/Vite หน้าเริ่มต้นภาษาไทย
+packages/
+  shared/               DTO types ที่ API ใช้
+  validation/           Zod health/error contracts ที่ API tests และเว็บใช้
+infra/compose.yaml      PostgreSQL สำหรับ local development
 docs/
   product-requirements.md
   domain-rules.md
@@ -96,8 +113,8 @@ package-lock.json       Root dependency lockfile
 ```
 
 สถาปัตยกรรมเป้าหมายเป็น Modular Monolith และ REST ภายใต้ `/api/v1`
-ใช้ PostgreSQL เป็นฐานข้อมูล ส่วน Drizzle, Zod, server-side sessions และชุดทดสอบ
-เป็นแผน Foundation ที่ยังต้องนำมาพัฒนา ดูรายละเอียดใน [architecture.md](docs/architecture.md)
+มี Zod และชุดทดสอบ Foundation แล้ว ส่วน Drizzle/DB driver, migrations และ server-side sessions
+อยู่ใน F2 ดูรายละเอียดเป้าหมายใน [architecture.md](docs/architecture.md)
 
 ## เอกสารสำหรับพัฒนาต่อ
 
@@ -108,7 +125,7 @@ package-lock.json       Root dependency lockfile
 | [Architecture](docs/architecture.md) | โครงสร้างระบบ security และแนวทางดูแลระบบ |
 | [Data model & ERD](docs/data-model.md) | ตาราง ความสัมพันธ์ constraints indexes และ deletion policy |
 | [API contracts](docs/api-contracts.md) | Endpoint inventory, permissions, requests และ errors |
-| [OpenAPI core](docs/openapi.json) | สัญญาที่อ่านด้วยเครื่องได้สำหรับ 6 paths สำคัญ; ยังไม่ครบทุก endpoint |
+| [OpenAPI core](docs/openapi.json) | health ที่ implement แล้ว + 6 financial design paths; ยังไม่ครบทุก endpoint |
 | [UX flows](docs/ux-flows.md) | ลำดับใช้งานบน Android และสถานะผิดพลาด/เครือข่าย |
 | [Transaction examples](docs/transaction-examples.md) | ตัวอย่างขาย กระทบยอด คืนเงิน และปิดวันพร้อมผลต่อข้อมูล |
 | [Acceptance scenarios](docs/acceptance-scenarios.md) | กรณี A–P และหลักฐานที่ต้องเก็บเมื่อทดสอบจริง |
@@ -140,10 +157,10 @@ code review, DB migrations, API design, frontend design และ Git workflow
 ดู [วิธีเลือกใช้และผล review React/Vite skill](docs/skills-review.md)
 พร้อม [สถานะ tooling และ conventions](docs/project-engineering.md)
 ตัวอย่าง: `$pos-code-review review diff นี้` หรือ `$pos-test-validation วาง integration tests สำหรับกระทบยอด`
-skills เป็นคำแนะนำสำหรับพัฒนาต่อ ไม่ได้แปลว่า test runner, CI หรือฐานข้อมูลถูก implement แล้ว
+skills อาจมีข้อความ snapshot ก่อน F1 ให้ตรวจโค้ดและสถานะ tooling ล่าสุดก่อนใช้คำสั่งเสมอ
 
-เริ่ม **F1 — Foundation skeleton**: เติม workspace/scripts/config/logging/error handling และ local PostgreSQL
-จากนั้นทำ **F2 — Database & Secure Access** ก่อนเริ่ม POS
+ถัดไป **F2 — Database & Secure Access**: Drizzle migrations, users/memberships/sessions,
+authentication/CSRF/rate limiting และ store access ก่อนเริ่ม POS
 
 ก่อนเปลี่ยนกฎที่มีผลต่อยอดขาย เงิน หรือสิทธิ์ ให้อ่าน domain rules และสถานะนโยบายใน requirements
 ทุกก้อนต้องอัปเดตเอกสารและเก็บผลตรวจรับตามจริง ไม่ปิด milestone จาก build ผ่านเพียงอย่างเดียว

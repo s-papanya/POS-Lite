@@ -43,12 +43,16 @@ walk(doc)
 operation_ids = set()
 for path, methods in doc["paths"].items():
     for method, operation in methods.items():
-        assert method == "post"
+        assert method in {"get", "post"}
         assert operation["operationId"] not in operation_ids
         operation_ids.add(operation["operationId"])
         params = operation["parameters"]
         assert set(re.findall(r"\{(\w+)\}", path)) == {p["name"] for p in params if p["in"] == "path"}
         headers = {p["name"] for p in params if p["in"] == "header"}
+        if path == "/health":
+            assert method == "get" and operation["security"] == []
+            assert "200" in operation["responses"]
+            continue
         assert "X-CSRF-Token" in headers
         if not path.endswith("/preview"):
             assert "Idempotency-Key" in headers

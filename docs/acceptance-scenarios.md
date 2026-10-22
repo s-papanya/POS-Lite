@@ -1,6 +1,7 @@
 # Acceptance scenarios และหลักฐานที่ต้องเก็บ
 
-สถานะทุกกรณี: **ออกแบบแล้ว ยังไม่ได้รัน** ไม่มี runtime/migrations ใน repository รอบนี้
+สถานะ A–P: **ออกแบบแล้ว ยังไม่ได้รัน** ยังไม่มี business schema/migrations/ธุรกรรมให้ทดสอบ
+F1 มี runtime config/HTTP tests แยกแล้ว ดู [หลักฐาน Foundation](foundation-validation.md)
 จำนวนเงินในคำอธิบายเป็นบาท; fixtures แปลงเป็นสตางค์
 integration ต้องใช้ PostgreSQL จริงคนละ connection สำหรับ concurrency ไม่ mock locks
 แต่ละกรณีตรวจ HTTP + source rows + money_movements + audit + idempotency records

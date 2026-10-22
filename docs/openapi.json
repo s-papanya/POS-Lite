@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Family Store Manager core design contract",
-    "version": "0.1.0",
-    "description": "Phase 0 core contract only. Full endpoint inventory in api-contracts.md. No runtime implementation."
+    "version": "0.2.0",
+    "description": "F1 health endpoint implemented. Six financial paths remain design contracts only. See api-contracts.md."
   },
   "servers": [
     {
@@ -16,6 +16,26 @@
     }
   ],
   "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Process liveness only; does not verify DB, authentication or sales readiness",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "API process is running; Cache-Control: no-store; server-generated X-Request-Id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/stores/{storeId}/sales": {
       "post": {
         "operationId": "createSale",
@@ -122,6 +142,16 @@
             }
           },
           "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
             "description": "Standard error; action codes in api-contracts.md",
             "content": {
               "application/json": {
@@ -280,6 +310,16 @@
               }
             }
           },
+          "413": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Standard error; action codes in api-contracts.md",
             "content": {
@@ -428,6 +468,16 @@
             }
           },
           "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
             "description": "Standard error; action codes in api-contracts.md",
             "content": {
               "application/json": {
@@ -601,6 +651,16 @@
               }
             }
           },
+          "413": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Standard error; action codes in api-contracts.md",
             "content": {
@@ -741,6 +801,16 @@
             }
           },
           "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
             "description": "Standard error; action codes in api-contracts.md",
             "content": {
               "application/json": {
@@ -898,6 +968,16 @@
             }
           },
           "409": {
+            "description": "Standard error; action codes in api-contracts.md",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
             "description": "Standard error; action codes in api-contracts.md",
             "content": {
               "application/json": {
@@ -1805,6 +1885,33 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "HealthResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "ok"
+              },
+              "service": {
+                "type": "string",
+                "const": "family-store-manager-api"
+              }
+            },
+            "required": [
+              "status",
+              "service"
+            ]
+          }
+        },
+        "required": [
+          "data"
         ]
       }
     }

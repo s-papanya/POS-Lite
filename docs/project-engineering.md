@@ -1,6 +1,6 @@
 # Engineering conventions สำหรับ project skills
 
-ข้อตกลงเริ่มต้นสำหรับพัฒนาต่อ ไม่ได้ติดตั้ง tooling หรือทำให้ Foundation เสร็จ
+ข้อตกลงสำหรับพัฒนาต่อและสถานะล่าสุดหลัง F1; M1 ยังไม่ครบเพราะ F2 ยังไม่ได้ทำ
 skills อยู่ใน `.agents/skills` ใช้เฉพาะประเภทงานที่เกี่ยวข้อง ไม่โหลดทุก skill ทุกครั้ง
 ตรวจ package/config และผลรันใหม่ก่อนอ้างสถานะ หากโค้ดต่างจากกฎธุรกิจที่ตกลงให้รายงาน gap ไม่แก้กฎตาม bug
 
@@ -8,27 +8,30 @@ skills อยู่ใน `.agents/skills` ใช้เฉพาะประเ�
 
 | เรื่อง | มีจริง | แผนที่ยังไม่ implement |
 |---|---|---|
-| Runtime | React/Vite/TypeScript, Express/TypeScript, npm workspaces | PostgreSQL, Drizzle, Zod, session auth |
-| Tests | API test เป็น failing placeholder; ไม่มี runner/config | Vitest + Supertest; PostgreSQL จริงสำหรับ transaction/constraint/concurrency |
+| Runtime | React/Vite/TypeScript, Express, Zod, Pino, shared/validation packages; PostgreSQL local Compose | DB driver/Drizzle, business migrations, session auth |
+| Tests | Vitest5/Supertest; config และ HTTP/error/logging tests | PostgreSQL integration สำหรับ business transactions/constraints/concurrency |
 | CI/CD | ยังไม่มี workflows หรือ deployment manifests | CI, staging/production pipeline, backup/restore |
-| Lint | เว็บ ESLint flat config: JS/TS recommended, Hooks, Fast Refresh | API lint และ root lint/typecheck/test |
+| Lint | Root ESLint สำหรับ API/tests/packages; เว็บ Hooks/Fast Refresh; root build/typecheck/lint/test | CI quality gates |
 | Style | API double quotes/semicolons; เว็บ single quotes/no semicolons เป็นหลัก | formatter/import sorting ที่ enforce ร่วมกัน |
-| UI | Vite starter/CSS ไม่มี Tailwind หรือ product components | Thai mobile UX/tokens/reusable components |
+| UI | Thai shell/CSS navy tokens, health/retry/error/offline states | Tailwind/product transaction components |
 | Git | GitHub origin, main, Conventional Commit ตัวอย่างใน history | protection/required checks/hooks ยังไม่ถือว่าตั้งแล้ว |
 
 คำสั่งที่มีตอนนี้จาก root (ตรวจ scripts อีกครั้งก่อนใช้):
 
 ```sh
 npm ci
-npm run typecheck -w apps/api
-npm run lint -w apps/web
-npm run build -w apps/web
+npm run typecheck
+npm run lint
+npm test
+npm run build
 ```
 
-root build ใช้ `--if-present` จึงข้าม API ที่ยังไม่มี build script; API start ต้องมี dist ก่อน
-API test ยังล้มเหลวโดยตั้งใจ ห้ามเปลี่ยนเป็น noop เพื่อให้ CI เขียว
-ไม่รัน npm ci ซ้ำเพื่อแก้ docs/skills; เป้าหมายคือ root lockfile เดียว แต่ nested web lockfile เป็นหนี้ F1
-ไม่ลบทิ้งอัตโนมัติในงานอื่น Python design scripts เป็นการตรวจเอกสาร ไม่ใช่ application tests
+F1 ใช้ root lockfile เดียวและ build explicit ทุก workspace; API start ต้องมี dist จาก build ก่อน
+shared packages มี consumer จริง: API ใช้ DTOs และเว็บ/API tests ใช้ Zod contracts
+ไม่รัน npm ci ซ้ำเพื่อแก้ docs/skills และห้าม noop เพื่อให้ checks เขียว
+บาง skills บันทึกสถานะก่อน F1 ว่า runner/Compose ยังไม่มี ให้ถือเป็น historical snapshot
+สถานะจริงในเอกสารนี้และโค้ด/config ล่าสุดมีลำดับก่อนข้อความ snapshot เหล่านั้น
+Python design checks ไม่ใช่ application tests; [ผลตรวจ F1](foundation-validation.md) แยกจาก business A–P ที่ยังไม่รัน
 
 ## การอ้างอิงและ conventions ใหม่
 

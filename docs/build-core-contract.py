@@ -97,7 +97,18 @@ OPERATIONS = [
     ("cash-closings/preview", "previewClosing", "ClosingPreviewRequest", "ClosingPreview", False, ["OWNER", "MANAGER"]),
     ("cash-closings", "closeDay", "ClosingRequest", "ClosingResult", True, ["OWNER", "MANAGER"]),
 ]
-paths = {}
+SCHEMAS["HealthResponse"] = obj({"data": obj({
+    "status": {"type": "string", "const": "ok"},
+    "service": {"type": "string", "const": "family-store-manager-api"},
+})})
+paths = {"/health": {"get": {
+    "operationId": "getHealth",
+    "summary": "Process liveness only; does not verify DB, authentication or sales readiness",
+    "security": [],
+    "parameters": [],
+    "responses": {"200": {"description": "API process is running; Cache-Control: no-store; server-generated X-Request-Id",
+        "content": {"application/json": {"schema": ref("HealthResponse")}}}},
+}}}
 for suffix, operation, request, response, mutation, roles in OPERATIONS:
     params = [{"name": "storeId", "in": "path", "required": True, "schema": ref("Id")},
               {"name": "X-CSRF-Token", "in": "header", "required": True, "schema": ref("Text")}]
@@ -107,15 +118,15 @@ for suffix, operation, request, response, mutation, roles in OPERATIONS:
         params.append({"name": "Idempotency-Key", "in": "header", "required": True, "schema": ref("Id")})
     responses = {"201" if mutation else "200": {"description": "Committed result / original replay" if mutation else "Read-only snapshot",
         "content": {"application/json": {"schema": obj({"data": ref(response)})}}}}
-    for code in ("400", "401", "403", "404", "409", "422", "429", "500", "503"):
+    for code in ("400", "401", "403", "404", "409", "413", "422", "429", "500", "503"):
         responses[code] = {"description": "Standard error; action codes in api-contracts.md",
                            "content": {"application/json": {"schema": ref("Error")}}}
     paths["/stores/{storeId}/" + suffix] = {"post": {"operationId": operation,
         "x-permissions": roles, "x-transaction": "Atomic source/ledger/audit/idempotency with row locks" if mutation else "Consistent read snapshot",
         "parameters": params, "requestBody": {"required": True, "content": {"application/json": {"schema": ref(request)}}}, "responses": responses}}
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.1.0",
-    "description": "Phase 0 core contract only. Full endpoint inventory in api-contracts.md. No runtime implementation."},
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.2.0",
+    "description": "F1 health endpoint implemented. Six financial paths remain design contracts only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

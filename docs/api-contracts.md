@@ -1,6 +1,11 @@
 # REST API contracts
 
 Base `/api/v1`; JSON UTF-8; UUID identifiers; amount เป็น integer string หน่วยสตางค์
+F1 implement เฉพาะ `GET /health` และ HTTP error boundary; endpoints ธุรกิจด้านล่างยังเป็นสัญญาออกแบบ
+Health public response `{data:{status:"ok",service:"family-store-manager-api"}}`, HTTP200,
+`X-Request-Id` UUID สร้างจาก server, `Cache-Control: no-store`; ไม่แปลว่า DB/auth/POS พร้อม
+JSON body limit16kb; เกินตอบ413 PAYLOAD_TOO_LARGE; malformed JSON ตอบ400 INVALID_REQUEST
+error envelope ใช้ shared schema; request logs ไม่เก็บ body/headers/query/exception text
 ดู machine-readable core contract ใน [openapi.json](openapi.json) สำหรับ schema สำคัญ
 เอกสารนี้กำหนด resource ทั้ง MVP; contract tests ต้องเติม OpenAPI ให้ครบทุก endpoint ของแต่ละก้อนก่อนส่งมอบ
 
@@ -132,7 +137,7 @@ closing count `{accountId,counted,reason?}`; expected/variance server คำน�
 
 ## ตรวจสัญญากับ implementation
 
-OpenAPI core ครอบคลุม sales, reconciliation preview/confirm, refund และ closing preview/confirm
+OpenAPI core ครอบคลุม health ที่ implement แล้ว และสัญญา sales, reconciliation preview/confirm, refund และ closing preview/confirm
 foundation ต้องเชื่อม Zod→OpenAPI และเพิ่ม endpoints ตามตารางนี้ก่อน implement แต่ละ module
 contract tests ตรวจ request/response/error schema, money string และ no additional properties;
 integration tests ตรวจผล DB/permission/race ไม่ใช้ OpenAPI validation แทน business tests
