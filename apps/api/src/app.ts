@@ -8,6 +8,7 @@ import { authRouter } from "./modules/auth/routes.js";
 import type { AuthService } from "./modules/auth/service.js";
 import { catalogRouter } from "./modules/catalog/routes.js";
 import { accountsRouter } from "./modules/accounts/routes.js";
+import { businessDaysRouter } from "./modules/business-days/routes.js";
 
 export function createApp({ logger, config, auth }: { logger: Logger; config: AppConfig; auth?: AuthService }) {
   const app = express();
@@ -29,6 +30,7 @@ export function createApp({ logger, config, auth }: { logger: Logger; config: Ap
   if (auth) app.use("/api/v1", authRouter(auth));
   if (auth) app.use("/api/v1", catalogRouter(auth));
   if (auth) app.use("/api/v1", accountsRouter(auth));
+  if (auth) app.use("/api/v1", businessDaysRouter(auth));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

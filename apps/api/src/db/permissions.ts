@@ -12,5 +12,7 @@ export async function grantRuntimeAccess(pool: Pool) {
     GRANT SELECT, INSERT, UPDATE ON products, idempotency_records TO pos_lite_app;
     GRANT SELECT, INSERT ON financial_accounts, account_stores, account_openings, money_movements TO pos_lite_app;
     GRANT UPDATE (name,active) ON financial_accounts TO pos_lite_app;
+    GRANT SELECT, INSERT ON business_days, day_openings TO pos_lite_app;
+    GRANT UPDATE (revision) ON business_days TO pos_lite_app;
   `);
 }

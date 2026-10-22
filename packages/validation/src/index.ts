@@ -53,3 +53,8 @@ export const apiErrorResponseSchema: z.ZodType<ApiErrorResponse> = z.strictObjec
     details: z.record(z.string(),z.unknown()).optional(),
   }),
 });
+export const businessDateSchema = z.iso.date();
+export const openBusinessDaySchema = z.strictObject({businessDate:businessDateSchema});
+export const businessDayResponseSchema = z.strictObject({data:z.strictObject({id:z.uuid(),businessDate:businessDateSchema,
+  state:z.enum(["OPEN","CLOSED"]),revision:z.string().regex(/^[0-9]+$/),
+  openingSnapshots:z.array(z.strictObject({accountId:z.uuid(),amount:nonnegativeMoneySchema})).optional()})});

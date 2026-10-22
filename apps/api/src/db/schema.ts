@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigint, boolean, check, customType, foreignKey, index, integer, jsonb, pgTable,
+import { bigint, boolean, check, customType, date, foreignKey, index, integer, jsonb, pgTable,
   text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
@@ -133,3 +133,23 @@ export const moneyMovements = pgTable("money_movements",{
   foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"money_movements_actor_fk"}),
   check("money_movements_delta",sql`${t.delta} > 0 and ${t.delta} <= 9000000000000`),
   index("money_movements_balance_idx").on(t.businessId,t.accountId,t.createdAt,t.id)]);
+
+export const businessDays = pgTable("business_days",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),businessDate:date("business_date").notNull(),
+  state:text("state").notNull().default("OPEN"),revision:bigint("revision",{mode:"bigint"}).notNull().default(sql`0`),
+  closingVersion:integer("closing_version").notNull().default(0),
+  openedAt:timestamp("opened_at",{withTimezone:true}).notNull().default(sql`clock_timestamp()`),createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t)=>[unique("business_days_date_uq").on(t.businessId,t.storeId,t.businessDate),unique("business_days_scope_uq").on(t.businessId,t.storeId,t.id),
+  uniqueIndex("business_days_open_uq").on(t.businessId,t.storeId).where(sql`${t.state} = 'OPEN'`),
+  foreignKey({columns:[t.businessId,t.storeId],foreignColumns:[stores.businessId,stores.id],name:"business_days_store_fk"}),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"business_days_actor_fk"}),
+  check("business_days_state",sql`${t.state} in ('OPEN','CLOSED')`),check("business_days_revision",sql`${t.revision} >= 0 and ${t.closingVersion} >= 0`),
+  check("business_days_date",sql`${t.businessDate} = (${t.openedAt} AT TIME ZONE 'Asia/Bangkok')::date`)]);
+export const dayOpenings = pgTable("day_openings",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),dayId:uuid("day_id").notNull(),accountId:uuid("account_id").notNull(),
+  amount:bigint("amount",{mode:"bigint"}).notNull(),recordedAt:timestamp("recorded_at",{withTimezone:true}).notNull(),createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t)=>[unique("day_openings_account_uq").on(t.dayId,t.accountId),
+  foreignKey({columns:[t.businessId,t.storeId,t.dayId],foreignColumns:[businessDays.businessId,businessDays.storeId,businessDays.id],name:"day_openings_day_fk"}),
+  foreignKey({columns:[t.businessId,t.storeId,t.accountId],foreignColumns:[accountStores.businessId,accountStores.storeId,accountStores.accountId],name:"day_openings_mapping_fk"}),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"day_openings_actor_fk"}),
+  check("day_openings_amount",sql`${t.amount} between 0 and 9000000000000`)]);

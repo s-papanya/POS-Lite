@@ -21,6 +21,7 @@ import { migrateDatabase } from "../src/db/migrate.js";
 import { grantRuntimeAccess } from "../src/db/permissions.js";
 import { seedDevelopment } from "../src/db/seed.js";
 import { transaction } from "../src/db/client.js";
+import { businessDaysChecks } from "./business-days-checks.js";
 
 it("verifies migrations, seed, tenant constraints and runtime privileges on disposable PostgreSQL", async () => {
   config({ path: fileURLToPath(new URL("../../../.env", import.meta.url)), quiet: true });
@@ -54,7 +55,7 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
     await verifyOwnership();
     const credentials = [{ username: "test-owner", password: randomBytes(20).toString("hex") },
       { username: "test-mother", password: randomBytes(20).toString("hex") }];
-    await check("S1a to accounts upgrade preserves identity, catalog, audit and replay fixtures", async () => {
+    await check("S1b to days upgrade preserves identity, catalog, ledger, audit and replay fixtures", async () => {
       const migrationRoot=fileURLToPath(new URL("../drizzle/",import.meta.url));
       const temporaryRoot=fileURLToPath(new URL("../../../.tmp/",import.meta.url));
       await mkdir(temporaryRoot,{recursive:true});
@@ -62,10 +63,11 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
       await mkdir(fixture); await mkdir(resolve(fixture,"meta"));
       try {
         const journal=JSON.parse(await readFile(resolve(migrationRoot,"meta/_journal.json"),"utf8"));
-        journal.entries=journal.entries.slice(0,2);
+        journal.entries=journal.entries.slice(0,3);
         await writeFile(resolve(fixture,"meta/_journal.json"),JSON.stringify(journal));
         await copyFile(resolve(migrationRoot,"0000_identity_access.sql"),resolve(fixture,"0000_identity_access.sql"));
         await copyFile(resolve(migrationRoot,"0001_catalog.sql"),resolve(fixture,"0001_catalog.sql"));
+        await copyFile(resolve(migrationRoot,"0002_accounts_opening.sql"),resolve(fixture,"0002_accounts_opening.sql"));
         await migrate(drizzle(db!),{migrationsFolder:fixture});
         await seedDevelopment(db!,credentials);
         const identities=(await db!.query("SELECT id,username,password_hash FROM users ORDER BY id")).rows;
@@ -75,18 +77,24 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
         await db!.query("INSERT INTO audit_logs(business_id,store_id,actor_user_id,action,entity_type,entity_id,request_id) VALUES($1,$2,$3,'UPGRADE_FIXTURE','product',$4,$5)",[store.business_id,store.id,owner,product,randomUUID()]);
         await db!.query("INSERT INTO idempotency_records(business_id,user_id,key,method,path,payload_hash,response_status,response_body,resource_id) VALUES($1,$2,$3,'POST','/fixture',$4,201,$5,$6)",
           [store.business_id,owner,randomUUID(),randomBytes(32),{data:{id:product}},product]);
-        const queries=["SELECT * FROM products ORDER BY id","SELECT * FROM audit_logs ORDER BY id","SELECT * FROM idempotency_records ORDER BY id"];
+        await transaction(db!,async(client)=>{
+          const account=(await client.query("INSERT INTO financial_accounts(business_id,name,type,active,created_by) VALUES($1,'Upgrade cash','CASH',false,$2) RETURNING id",[store.business_id,owner])).rows[0].id;
+          await client.query("INSERT INTO account_stores(business_id,store_id,account_id,created_by) VALUES($1,$2,$3,$4)",[store.business_id,store.id,account,owner]);
+          const source=(await client.query("INSERT INTO account_openings(business_id,store_id,account_id,amount,cutover_at,reason,created_by) VALUES($1,$2,$3,12345,'2000-01-01','Upgrade fixture',$4) RETURNING id",[store.business_id,store.id,account,owner])).rows[0].id;
+          await client.query("INSERT INTO money_movements(business_id,store_id,account_id,account_opening_id,delta,created_by) VALUES($1,$2,$3,$4,12345,$5)",[store.business_id,store.id,account,source,owner]);
+        });
+        const queries=["products","audit_logs","idempotency_records","financial_accounts","account_stores","account_openings","money_movements"].map((table)=>`SELECT * FROM ${table} ORDER BY id`);
         const before=await Promise.all(queries.map(async(sql)=>(await db!.query(sql)).rows));
         await migrateDatabase(db!); await migrateDatabase(db!);
         assert.deepEqual((await db!.query("SELECT id,username,password_hash FROM users ORDER BY id")).rows,identities);
         assert.deepEqual(await Promise.all(queries.map(async(sql)=>(await db!.query(sql)).rows)),before);
-        assert.equal((await db!.query("SELECT count(*)::int AS n FROM money_movements")).rows[0].n,0);
+        assert.equal((await db!.query("SELECT sum(delta)::text AS total FROM money_movements")).rows[0].total,"12345");
       } finally {
         assert.equal(dirname(fixture),resolve(temporaryRoot));
         assert.match(fixture.slice(resolve(temporaryRoot).length),/^[/\\]migration-fixture-[a-f0-9-]{36}$/);
         await rm(fixture,{recursive:true});
       }
-      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 3);
+      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 4);
     });
     await grantRuntimeAccess(db);
     const runtimeTarget = new URL(process.env.DATABASE_URL!); runtimeTarget.pathname = `/${name}`;
@@ -430,6 +438,7 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
       for(const row of original) await db!.query("UPDATE drizzle.__drizzle_migrations SET hash=$1 WHERE created_at=$2",[row.hash,row.created_at]);
       await migrateDatabase(db!);
     });
+    await businessDaysChecks(db,runtime,auth,app,check);
     console.log(`${checks} database integration checks passed`);
   } finally {
     await runtime?.end();

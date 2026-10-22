@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import type { AccountOpening, FinancialAccount } from "@pos-lite/shared";
 import { transaction } from "../../db/client.js";
+import { requireEditableAccounts } from "../../db/store-locks.js";
 import { claimIdempotency, completeIdempotency, type WriteResult } from "../../db/idempotency.js";
 import { AuthError, type Session } from "../auth/service.js";
 
@@ -22,6 +23,7 @@ export class AccountsService {
       await this.owner(client,actor);
       if(claim.replay) return claim.replay;
       const result=await work(client);
+      await this.owner(client,actor);
       await completeIdempotency(client,claim.id,result);
       return result;
     });
@@ -43,6 +45,7 @@ export class AccountsService {
     return this.write<FinancialAccount>(actor,key,"POST","/accounts",input,async(client)=>{
       const stores=await client.query("SELECT id FROM stores WHERE business_id=$1 AND id=ANY($2::uuid[]) AND active ORDER BY id",[actor.business_id,input.storeIds]);
       if(stores.rowCount!==input.storeIds.length) throw new AuthError(404,"RESOURCE_NOT_FOUND");
+      await requireEditableAccounts(client,actor.business_id,input.storeIds);
       const account=(await client.query<Omit<FinancialAccount,"storeIds">>(`INSERT INTO financial_accounts(business_id,name,type,created_by)
         VALUES($1,$2,$3,$4) RETURNING ${accountColumns}`,[actor.business_id,input.name,input.type,actor.user_id])).rows[0]!;
       for(const storeId of input.storeIds) await client.query("INSERT INTO account_stores(business_id,store_id,account_id,created_by) VALUES($1,$2,$3,$4)",
@@ -60,8 +63,9 @@ export class AccountsService {
   }
   update(actor:Actor,accountId:string,key:string,input:{name?:string;active?:boolean},requestId:string) {
     return this.write<FinancialAccount>(actor,key,"PATCH",`/accounts/${accountId}`,input,async(client)=>{
-      const previous=await this.lockAccount(client,actor,accountId);
       const mapping=(await client.query<{store_id:string}>("SELECT store_id FROM account_stores WHERE business_id=$1 AND account_id=$2 ORDER BY store_id",[actor.business_id,accountId])).rows;
+      if(input.active!==undefined) await requireEditableAccounts(client,actor.business_id,mapping.map((row)=>row.store_id));
+      const previous=await this.lockAccount(client,actor,accountId);
       const account=(await client.query<Omit<FinancialAccount,"storeIds">>(`UPDATE financial_accounts SET name=$1,active=$2 WHERE business_id=$3 AND id=$4 RETURNING ${accountColumns}`,
         [input.name ?? previous.name,input.active ?? previous.active,actor.business_id,accountId])).rows[0]!;
       const storeIds=mapping.map((row)=>row.store_id); const data={...account,storeIds};
@@ -71,6 +75,8 @@ export class AccountsService {
   }
   opening(actor:Actor,accountId:string,key:string,input:Omit<AccountOpening,"id" | "accountId">,requestId:string) {
     return this.write<AccountOpening>(actor,key,"POST",`/accounts/${accountId}/opening`,input,async(client)=>{
+      const stores=(await client.query<{store_id:string}>("SELECT store_id FROM account_stores WHERE business_id=$1 AND account_id=$2 ORDER BY store_id",[actor.business_id,accountId])).rows;
+      await requireEditableAccounts(client,actor.business_id,stores.map((row)=>row.store_id));
       const account=await this.lockAccount(client,actor,accountId);
       await this.owner(client,actor);
       if(!account.active) throw new AuthError(422,"ACCOUNT_INACTIVE");

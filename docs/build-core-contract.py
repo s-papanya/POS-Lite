@@ -32,7 +32,7 @@ SCHEMAS.update({
     "Date": {"type": "string", "format": "date"},
     "Time": {"type": "string", "format": "date-time"},
     "Text": {"type": "string", "minLength": 1, "maxLength": 1000},
-    "Revision": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+    "Revision": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"},
     "Version": {"type": "integer", "minimum": 1},
     "Quantity": {"type": "integer", "minimum": 1, "maximum": 999},
     "Channel": {"type": "string", "enum": ["CASH", "TRANSFER"]},
@@ -236,7 +236,7 @@ for path, method, operation, request, response in [
     responses = {"201" if method == "post" else "200": {"description": "Committed / original replay; lists expose no balance",
         "content": {"application/json": {"schema": ref(response)}}}}
     for code in ("400", "401", "403", "404", "409", "413", "422", "500"):
-        responses[code] = {"description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
+        responses[code] = {"description": "Standard error; ACCOUNT_NAME_TAKEN, ACCOUNT_ALREADY_OPENED, ACCOUNT_INACTIVE, ACCOUNT_CONFIGURATION_LOCKED, INVALID_CUTOVER_DATE or IDEMPOTENCY_CONFLICT",
             "content": {"application/json": {"schema": ref("Error")}}}
     op = {"operationId": operation, "x-implemented": True, "parameters": params, "responses": responses,
           "x-permissions": ["OWNER"] if request else ["OWNER", "MANAGER", "STAFF"]}
@@ -244,8 +244,38 @@ for path, method, operation, request, response in [
         op["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref(request)}}}
     paths[path] = {method: op}
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.5.0",
-    "description": "F1/F2, S1a products and S1b accounts/opening implemented. Six sales/closing paths remain design only. See api-contracts.md."},
+SCHEMAS["BusinessDayOpenRequest"] = obj({"businessDate": {"type": "string", "format": "date"}})
+SCHEMAS["BusinessDayRead"] = obj({"id": ref("Id"), "businessDate": {"type": "string", "format": "date"},
+    "state": {"type": "string", "enum": ["OPEN", "CLOSED"]}, "revision": ref("Revision"),
+    "openingSnapshots": {"type": "array", "items": obj({"accountId": ref("Id"), "amount": ref("Money")})}}, ("openingSnapshots",))
+SCHEMAS["BusinessDayReadResponse"] = obj({"data": ref("BusinessDayRead")})
+SCHEMAS["BusinessDayOpened"] = {**SCHEMAS["BusinessDayRead"], "required": list(SCHEMAS["BusinessDayRead"]["properties"])}
+SCHEMAS["BusinessDayOpenResponse"] = obj({"data": ref("BusinessDayOpened")})
+for method, path in [("post", "/stores/{storeId}/business-days"), ("get", "/stores/{storeId}/business-days/{date}")]:
+    params = [{"name": "storeId", "in": "path", "required": True, "schema": ref("Id")}]
+    if method == "get":
+        params += [{"name": "date", "in": "path", "required": True, "schema": {"type": "string", "format": "date"}}]
+    else:
+        params += [{"name": name, "in": "header", "required": True, "schema": ref("Id" if name == "Idempotency-Key" else "Text")}
+                   for name in ["X-CSRF-Token", "Origin", "Idempotency-Key"]]
+    response = "BusinessDayReadResponse" if method == "get" else "BusinessDayOpenResponse"
+    responses = {"200": {"description": "Read / already OPEN; STAFF reads omit openingSnapshots",
+        "content": {"application/json": {"schema": ref(response)}}}}
+    if method == "post":
+        responses["201"] = {"description": "New day committed / original replay; no ledger movement",
+            "content": {"application/json": {"schema": ref(response)}}}
+    for code in ["400", "401", "403", "404", "409", "413", "422", "500"]:
+        responses[code] = {"description": "Standard error; INITIAL_BALANCES_REQUIRED, PREVIOUS_DAY_UNSETTLED, DAY_CLOSED, INVALID_BUSINESS_DATE or IDEMPOTENCY_CONFLICT",
+            "content": {"application/json": {"schema": ref("Error")}}}
+    operation = {"operationId": "openBusinessDay" if method == "post" else "getBusinessDay", "x-implemented": True,
+        "x-permissions": ["OWNER", "MANAGER"] if method == "post" else ["OWNER", "MANAGER", "STAFF"],
+        "parameters": params, "responses": responses}
+    if method == "post":
+        operation["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref("BusinessDayOpenRequest")}}}
+    paths[path] = {method: operation}
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.6.0",
+    "description": "F1/F2 and S1a-c catalog, accounts and first-day opening implemented. Six sales/closing paths remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

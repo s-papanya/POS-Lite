@@ -15,3 +15,5 @@ export interface CsrfResponse { data: { csrfToken: string } }
 export interface Product { id: string; name: string; price: string; version: number; active: boolean }
 export interface FinancialAccount { id:string; name:string; type:"CASH" | "BANK"; active:boolean; storeIds:string[] }
 export interface AccountOpening { id:string; accountId:string; storeId:string; amount:string; cutoverAt:string; reason:string }
+export type BusinessDay = {id:string;businessDate:string;state:"OPEN" | "CLOSED";revision:string;
+  openingSnapshots?:{accountId:string;amount:string}[]};
