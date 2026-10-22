@@ -1,6 +1,7 @@
 # S1c — วันทำการและฐานเงินสดเปิดวัน
 
 ตรวจใน development local วันที่ 23 ตุลาคม 2026 ต่อจาก S1b; ขั้นถัดไป S2 ธุรกรรม POS
+บันทึกนี้เป็นหลักฐานตอนส่ง S1c; ต่อมา S2 เพิ่ม auto-create+sale และ day-attributed ledger แล้ว ดู [sales-validation.md](sales-validation.md)
 
 ## พฤติกรรมที่เพิ่ม
 

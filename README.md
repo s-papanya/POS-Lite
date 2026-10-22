@@ -9,7 +9,7 @@
 
 ## สถานะปัจจุบัน
 
-**F1/F2 และ S1a–c เมนู บัญชี และเปิดวันแรก implement แล้ว — ยังไม่เปิดขายจริง**
+**F1/F2, S1a–c และ S2 API ขาย POS implement แล้ว — ยังไม่เปิดขายจริง**
 
 | ส่วน | สิ่งที่มีตอนนี้ |
 |---|---|
@@ -17,16 +17,18 @@
 | Frontend | หน้าเข้าสู่ระบบภาษาไทย เลือกร้านตามสิทธิ์ ออกจากระบบ และตรวจการเชื่อมต่อ |
 | Backend | Cookie sessions, CSRF/Origin, DB-backed rate limit, revoke/expiry และ store isolation |
 | เมนู/ราคา | API เพิ่ม/แก้/ปิดเมนูสำหรับ OWNER พร้อม version, audit และ idempotency; ยังไม่มีหน้าจัดเมนู |
-| ฐานข้อมูล | PostgreSQL + Drizzle migrations 16 ตาราง, runtime role แยกจาก admin, seed OWNER สองบัญชี/สองร้าน |
+| ฐานข้อมูล | PostgreSQL + Drizzle migrations 20 ตาราง, runtime role แยกจาก admin, seed OWNER สองบัญชี/สองร้าน |
 | บัญชี | API สร้าง CASH/BANK ผูกร้าน และยอดตั้งต้นครั้งเดียวลง ledger; ยังไม่มีหน้าจัดบัญชี |
 | วันทำการ | API เปิดวันแรกตามวันที่กรุงเทพฯ พร้อม snapshot เงินสดจาก ledger; STAFF อ่านได้โดยไม่เห็นยอดเงิน |
+| ขาย POS | API ขาย/แบ่งชำระ/เงินทอน/ส่วนลด/เลขบิล/ประวัติ พร้อมราคา snapshot และ ledger atomic; ยังไม่มีหน้าจอขาย |
 | Tooling | npm workspaces/lockfile เดียว, shared contracts, Vitest/Supertest, build/typecheck/lint/test |
-| ระบบใช้งานจริง | ยังไม่มี POS, ledger สำหรับธุรกรรมขาย/จ่าย, ปิดวัน หรือรายงาน |
+| ระบบใช้งานจริง | ยังไม่มีหน้าจอ POS, เงินออก, ปิดวัน หรือรายงาน |
 
 P1–P5 ยืนยันแล้ว; F2 ผ่าน local validation แล้ว ยังไม่ได้ปิด milestone บน GitHub
 ดู [ผลตรวจ F1](docs/foundation-validation.md) และ [F2/วิธีใช้ฐานข้อมูล](docs/access-validation.md)
 ดู [S1a API เมนู](docs/catalog-validation.md), [S1b บัญชี/ยอดตั้งต้น](docs/accounts-validation.md) และ [S1c เปิดวัน](docs/business-days-validation.md)
-การเปิดวันถัดไปยังปฏิเสธไว้จนมีหลักฐานปิดวันและ settlement ใน D4; งานถัดไปคือ S2 ธุรกรรม POS
+ดู [S2 API ขายและผลตรวจ](docs/sales-validation.md); งานถัดไปคือ S3 หน้าจอ POS บน Android
+การเปิดวันถัดไปยังปฏิเสธไว้จนมีหลักฐานปิดวันและ settlement ใน D4
 ดูสถานะและเงื่อนไขปิดงานใน [milestones.md](docs/milestones.md)
 
 ## ขอบเขต MVP ที่จะพัฒนา

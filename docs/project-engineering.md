@@ -4,6 +4,7 @@
 เพิ่ม S1a product API/optimistic version/audit/idempotency แล้ว ดู [catalog-validation.md](catalog-validation.md)
 S1b account/opening/ledger API เพิ่มแล้ว ดู [accounts-validation.md](accounts-validation.md)
 S1c เปิดวันแรก/snapshot เงินสดเพิ่มแล้ว ดู [business-days-validation.md](business-days-validation.md); วันถัดไปรอ D4 settlement
+S2 POS sale/history API เพิ่มแล้ว ดู [sales-validation.md](sales-validation.md); งานถัดไป S3 หน้าจอ Android
 skills อยู่ใน `.agents/skills` ใช้เฉพาะประเภทงานที่เกี่ยวข้อง ไม่โหลดทุก skill ทุกครั้ง
 ตรวจ package/config และผลรันใหม่ก่อนอ้างสถานะ หากโค้ดต่างจากกฎธุรกิจที่ตกลงให้รายงาน gap ไม่แก้กฎตาม bug
 
@@ -11,8 +12,8 @@ skills อยู่ใน `.agents/skills` ใช้เฉพาะประเ�
 
 | เรื่อง | มีจริง | แผนที่ยังไม่ implement |
 |---|---|---|
-| Runtime | React/Vite/TypeScript, Express, Zod, Pino, pg/Drizzle, Argon2id; auth/catalog/accounts/opening ledger/เปิดวันแรก | ปิดวัน/settlement/debit ledger/POS |
-| Tests | Vitest5/Supertest; config/HTTP/password และ PostgreSQL auth/constraints/rollback integration | financial transactions/concurrency A–P |
+| Runtime | React/Vite/TypeScript, Express, Zod, Pino, pg/Drizzle, Argon2id; auth/catalog/accounts/เปิดวัน/POS sale/history/credit ledger | ปิดวัน/settlement/debit ledger |
+| Tests | Vitest5/Supertest; pure BigInt money และ PostgreSQL auth/sales/constraints/rollback/lock integration | acceptance A–P ทุก module และ Android |
 | CI/CD | ยังไม่มี workflows หรือ deployment manifests | CI, staging/production pipeline, backup/restore |
 | Lint | Root ESLint สำหรับ API/tests/packages; เว็บ Hooks/Fast Refresh; root build/typecheck/lint/test | CI quality gates |
 | Style | API double quotes/semicolons; เว็บ single quotes/no semicolons เป็นหลัก | formatter/import sorting ที่ enforce ร่วมกัน |

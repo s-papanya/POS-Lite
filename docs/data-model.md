@@ -5,7 +5,9 @@ Identity/access 8 ตาราง implement ใน `apps/api/src/db/schema.ts` �
 products/idempotency_records เพิ่มแล้วใน migration0001; [ผลตรวจ S1a](catalog-validation.md)
 financial_accounts/account_stores/account_openings/money_movements เพิ่มใน0002 ดู [ผลตรวจ S1b](accounts-validation.md)
 business_days/day_openings เพิ่มใน0003 ดู [ผลตรวจ S1c](business-days-validation.md)
-ledger ตอนนี้มี account_opening source เท่านั้น; เปิดวันสร้าง cash snapshot ไม่มี movement; ต้นทางการเงินอื่นยังไม่ implement
+sales/sale_items/sale_payments/document_counters เพิ่มใน0004 ดู [ผลตรวจ S2](sales-validation.md)
+ledger ตอนนี้รองรับ account_opening หรือ sale_payment เท่านั้น พร้อม day_id ของ payment; เปิดวันไม่มี movement
+ชนิดขาย SUPPLEMENTAL/RECONCILIATION, debit sources และ closing ด้านล่างยังเป็น specification
 ใช้ UUID PK ทุกตาราง เว้นระบุ; B=business_id UUID NOT NULL; S=store_id UUID NOT NULL;
 T=created_at timestamptz NOT NULL DEFAULT now(); U=created_by UUID NOT NULL FK users
 เงินทุก field BIGINT หน่วยสตางค์, ID API เป็น UUID string; timestamp UTC/offset, business_date DATE
@@ -44,9 +46,9 @@ price history เต็มตารางไม่จำเป็นใน MVP: 
 | business_days / วันทำการ | id,B,S,business_date,state,revision bigint,closing_version int,opened_at,T,U | unique(B,S,business_date); partial unique(B,S) WHERE OPEN; state OPEN/CLOSED; revision/closing_version>=0; date ตรง opened_at Bangkok |
 | day_openings / ฐานเงินสด | id,B,S,day_id,account_id,amount bigint,recorded_at,T,U | composite day/account_stores FK; unique(day_id,account_id); amount>=0 |
 | document_counters / ลำดับอ้างอิง | id,B,S,business_date,kind,next_number bigint | unique(B,S,business_date,kind); next_number>0; lock row ใน tx |
-| sales / ขายทุกแบบ | id,B,S,day_id,kind,reference text,gross,discount,net bigint,reason?,occurred_at,T,U | kind POS/SUPPLEMENTAL/RECONCILIATION; gross>0; discount between 0/gross; net=gross-discount>0; unique(B,S,reference); index(B,S,day_id,occurred_at,id) |
-| sale_items / snapshot | id,B,S,sale_id,product_id,name_snapshot text,unit_price bigint,product_version int,quantity int,line_total bigint | composite sale/product FK; quantity 1..999; price>0; line_total=price*quantity; index(sale_id) |
-| sale_payments / รับเงิน | id,B,S,sale_id,account_id,channel,amount bigint,tendered bigint?,change bigint? | composite sale/account_stores FK; amount>0; CASH requires tendered>=amount and change=tendered-amount; TRANSFER both NULL; index(sale_id), (B,S,account_id) |
+| sales / ขายทุกแบบ | id,B,S,day_id,kind,reference text,gross,discount,net bigint,day_revision bigint,occurred_at,T,U | 0004 kind POS เท่านั้น; reason/ชนิดอื่นรอ D1; gross>0; net=gross-discount>0; unique(B,S,reference), unique(day_id,day_revision); index(B,S,occurred_at,id) |
+| sale_items / snapshot | id,B,S,sale_id,position int,product_id,name_snapshot text,unit_price bigint,product_version int,quantity int,line_total bigint | composite sale/product FK; unique(sale_id,position), unique(sale_id,product_id); quantity1..999; line_total=price*quantity; position0..99 |
+| sale_payments / รับเงิน | id,B,S,day_id,sale_id,account_id,channel,amount bigint,tendered bigint?,change bigint? | composite sale/day/account_stores FK; unique(sale_id,account_id), unique(B,S,day_id,account_id,id); amount>0; CASH tendered>=amount/change=tendered-amount; TRANSFER both NULL |
 | reconciliation_records / ยืนยันส่วนต่าง | id,B,S,day_id,base_revision bigint,reason text,T,U | unique(B,S,id); index(day_id,T); ไม่แก้ผลเดิม |
 | reconciliation_lines / target ต่อบัญชี | id,B,S,reconciliation_id,account_id,channel,recorded bigint,target bigint,delta bigint,resulting_sale_id? | unique(reconciliation_id,channel,account_id); target/recorded signed เพราะเป็นยอดสุทธิ; delta=target-recorded>=0; resulting sale NULL iff delta=0; FK sale/day scope ตรวจ trigger |
 | refunds / คืนเต็มบิล | id,B,S,day_id,sale_id,amount bigint,reason text,reference,occurred_at,T,U | unique(sale_id); amount>0; composite sale/day FK; unique(B,S,reference); index(B,S,day_id) |

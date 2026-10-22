@@ -1,6 +1,7 @@
 # REST API contracts
 
 Base `/api/v1`; JSON UTF-8; UUID identifiers; amount เป็น integer string หน่วยสตางค์
+S2 implement POST/GET /stores/:storeId/sales และ GET /stores/:storeId/sales/:saleId แล้ว ดู [sales-validation.md](sales-validation.md)
 day revision/expectedRevision เป็น nonnegative integer string รองรับ PostgreSQL BIGINT โดยไม่เสีย precision; product version ยังเป็น integer
 F1 health และ F2 `/auth/*`, `/me`, GET `/stores`, GET `/stores/:storeId` implement แล้ว
 endpoints ธุรกรรม/ปิดวัน/จัดการผู้ใช้ด้านล่างยังเป็นสัญญาออกแบบ
@@ -94,9 +95,9 @@ verify hash, rotate current session/revoke sessions อื่น tx; ไม่�
 |---|---|---|---|
 | GET /stores/:storeId/business-days/:date | O/M/S | — → data:{id,businessDate,state,revision,openingSnapshots?} | implement; STAFF ไม่ได้รับ openingSnapshots; revision เป็น string |
 | POST /stores/:storeId/business-days | O/M | {businessDate} → data:{id,businessDate,state,revision,openingSnapshots} | implement; วันนี้ Bangkok เท่านั้น; ใหม่201/OPENเดิม200/replaystatusเดิม; CLOSED409; วันก่อนมีอยู่ปฏิเสธจน D4; auto-create sale รอ S2 |
-| POST /stores/:storeId/sales | O/M/S | ตัวอย่างด้านล่าง → sale/ref/payments/dayRevision | คำนวณราคาเอง; source+items+payments+ledger; CLOSED ปฏิเสธ |
-| GET /stores/:storeId/sales | O/M/S | from,to,cursor → sales | รวม kind,refund/reversal status |
-| GET /stores/:storeId/sales/:saleId | O/M/S | — → snapshots,payments,refund refs | cross-store lookup 404 |
+| POST /stores/:storeId/sales | O/M/S | ตัวอย่างด้านล่าง → data:sale | implement POS; คำนวณราคาเอง/เปิดวันอัตโนมัติใน tx เดียว; source+items+payments+ledger+audit+key; CLOSED409 |
+| GET /stores/:storeId/sales | O/M/S | from,to,limit?,cursor? → data:sales[],page:nextCursor | implement POS history; from/to บังคับ inclusive Bangkok ไม่เกิน366วัน; keyset occurred_at/id DESC; refund/reversal status รอ D3 |
+| GET /stores/:storeId/sales/:saleId | O/M/S | — → data:sale | implement immutable snapshots/payments; cross-store404; refund refs รอ D3 |
 | POST /stores/:storeId/supplemental-sales | O/M | businessDate,occurredAt,amount,payments,reason → sale kind SUPPLEMENTAL | amount>0; sum payments=amount; ledger เพิ่ม; CLOSED ปฏิเสธ |
 | POST /stores/:storeId/sales-reconciliations/preview | O/M | businessDate,targets[] → revision,lines,netSales,accountEffects | read snapshot เดียว; ไม่ post; CLOSED อ่านได้เพื่อแสดงผลแต่ confirm ไม่ได้ |
 | POST /stores/:storeId/sales-reconciliations | O/M | businessDate,occurredAt,expectedRevision,targets[],reason → record,createdSales,dayRevision | lock day/recompute; delta>=0 ทุก bucket; all-or-nothing; CLOSED ปฏิเสธ |
@@ -120,8 +121,13 @@ sale request (ตัวเลขตัวอย่างนี้เป็นส
 ```
 
 discount อีกแบบ `{kind:"PERCENT",basisPoints:500}`; ไม่มี client unitPrice/gross/net ที่ถือเป็นจริง
-response sale `{id,reference,kind,gross,discount,net,items,payments,dayRevision}`
+response sale `{id,reference,kind,businessDate,occurredAt,gross,discount,net,items,payments,dayRevision}`
 payments response เพิ่ม change จาก server; ไม่รับ change ใน request
+S2 จำกัด POS 1–100รายการสินค้าและ1–100payments; productId/accountId ห้ามซ้ำ; รวมสินค้าเดียวกันด้วย quantity1–999
+TRANSFER ต้อง BANK และไม่มี tendered; CASH ต้อง CASH พร้อม tendered; sum(amount)=net>0; ไม่มีภาษี/ค่าบริการ
+reference `POS-YYYYMMDD-000001` แยก counter ต่อร้าน/วัน; dayRevision เป็น revision ตอนขาย ไม่เปลี่ยนตามวันปัจจุบัน
+422: INVALID_SALE_TOTALS, INSUFFICIENT_TENDERED, ACCOUNT_CHANNEL_MISMATCH, ACCOUNT_INACTIVE, PRODUCT_INACTIVE, INVALID_OCCURRED_AT
+409 PRICE_CHANGED คืน details.current เพื่อยืนยันใหม่; วัน/initial balances/idempotency errors ใช้กฎเดียวกับ S1c
 target `{channel:"CASH"|"TRANSFER",accountId,amount}` unique(channel,accountId), amount signed เป็นยอดสุทธิ
 อนุญาต target ติดลบเพื่อบันทึกผลตรวจหลังคืนเงิน; delta ที่สร้าง sale ต้อง >=0 เสมอ
 preview line `{accountId,channel,recorded,target,delta,requiresReview}`;

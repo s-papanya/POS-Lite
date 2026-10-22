@@ -46,6 +46,8 @@ store attribution เป็นมุมกระแสเงิน ไม่ใ�
 เริ่มระบบใช้ OWNER opening transaction ต่อบัญชีหนึ่งครั้งพร้อมเหตุผล/วันที่ cutover;
 เป็นเงินเดิมก่อนเริ่มใช้ ไม่ใช่รายได้หรือเติมทุน ห้าม post ก่อน cutover
 เงินเปิดวันเป็น snapshot ledger ไม่ใช่ movement เงินใส่เพิ่มต้อง contribution หรือ transfer
+ledger ของการขายมี day_id และ sale_payment_id จริง; คำนวณฐานเปิดวันโดยไม่นับ movement ของวันนั้น
+ไม่ใช้ created_at แยกฐานเพราะ now() ของ transaction อาจมาก่อน opened_at ของวันอัตโนมัติ
 cash account เป็นของร้านเดียว; bank account อาจแชร์ผ่าน account_stores
 ห้าม movement อิสระ: ทุก movement ต้องมี FK ต้นทางจริงและ unique posting slot
 ห้ามแก้/ลบ movement ผ่าน runtime role; rollback ล้างทั้งชุดที่ยังไม่ commit
@@ -99,6 +101,7 @@ client timeout เก็บ key/payload/user/store; retry ชุดเดิม�
 transaction ใช้ READ COMMITTED + explicit row locks ลำดับเดียวกันทุก service:
 claim idempotency row → business_days เรียง store/date → sales/expenses ต้นทางเรียง ID
 → financial_accounts เรียง ID → document counter → เขียน source/ledger/audit/response → COMMIT
+S2 ล็อก products เรียง ID แบบ FOR SHARE หลังวันและก่อนบัญชี เพื่อให้ snapshot/version ไม่แข่งกับการแก้ราคา
 การสร้างวันใช้ store configuration advisory transaction lock ก่อน SELECT/INSERT day เพื่อ serialize กรณีที่ยังไม่มีแถววัน
 การสร้าง/เปิดยอดตั้งต้น/เปลี่ยน active บัญชีใช้ gate เดียวกัน เรียง store IDs ก่อน lock account IDs;
 ห้ามเปลี่ยนชุดบัญชีระหว่างวัน OPEN (เปลี่ยนชื่อได้) และไม่กระทบลำดับ day/account locks ของธุรกรรมเงิน

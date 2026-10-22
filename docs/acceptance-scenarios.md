@@ -1,6 +1,7 @@
 # Acceptance scenarios และหลักฐานที่ต้องเก็บ
 
-สถานะ A–P: **ออกแบบแล้ว ยังไม่ได้รัน** ยังไม่มี business schema/migrations/ธุรกรรมให้ทดสอบ
+สถานะ A–P: **ยังไม่ผ่านครบทุก module**; S2 มี local PostgreSQL หลักฐานด้าน A/E/M/N/P ของ POS แล้ว
+ดู [sales-validation.md](sales-validation.md); Closing/refund/reconciliation และ Android ยังไม่ implement/ตรวจรับ
 F1 มี runtime config/HTTP tests แยกแล้ว ดู [หลักฐาน Foundation](foundation-validation.md)
 จำนวนเงินในคำอธิบายเป็นบาท; fixtures แปลงเป็นสตางค์
 integration ต้องใช้ PostgreSQL จริงคนละ connection สำหรับ concurrency ไม่ mock locks
