@@ -1,10 +1,15 @@
 import { it } from "vitest";
+import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import request from "supertest";
 import { createApp } from "../src/app.js";
 import { readConfig } from "../src/config.js";
 import { createLogger } from "../src/logger.js";
 import { AuthService } from "../src/modules/auth/service.js";
 import { csrfResponseSchema, meResponseSchema, storeListResponseSchema, storeResponseSchema, logoutResponseSchema } from "@pos-lite/validation";
+import { productResponseSchema, productListResponseSchema } from "@pos-lite/validation";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -46,15 +51,34 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
     await db.query("CREATE TABLE test_ownership (token text NOT NULL)");
     await db.query("INSERT INTO test_ownership VALUES ($1)", [ownership]); marked = true;
     await verifyOwnership();
-    await check("fresh migrations and repeat application", async () => {
-      await migrateDatabase(db!); await migrateDatabase(db!);
-      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 1);
+    const credentials = [{ username: "test-owner", password: randomBytes(20).toString("hex") },
+      { username: "test-mother", password: randomBytes(20).toString("hex") }];
+    await check("F2 migration then catalog upgrade preserve identity fixtures", async () => {
+      const migrationRoot=fileURLToPath(new URL("../drizzle/",import.meta.url));
+      const temporaryRoot=fileURLToPath(new URL("../../../.tmp/",import.meta.url));
+      await mkdir(temporaryRoot,{recursive:true});
+      const fixture=resolve(temporaryRoot,`migration-fixture-${randomUUID()}`);
+      await mkdir(fixture); await mkdir(resolve(fixture,"meta"));
+      try {
+        const journal=JSON.parse(await readFile(resolve(migrationRoot,"meta/_journal.json"),"utf8"));
+        journal.entries=journal.entries.slice(0,1);
+        await writeFile(resolve(fixture,"meta/_journal.json"),JSON.stringify(journal));
+        await copyFile(resolve(migrationRoot,"0000_identity_access.sql"),resolve(fixture,"0000_identity_access.sql"));
+        await migrate(drizzle(db!),{migrationsFolder:fixture});
+        await seedDevelopment(db!,credentials);
+        const identities=(await db!.query("SELECT id,username,password_hash FROM users ORDER BY id")).rows;
+        await migrateDatabase(db!); await migrateDatabase(db!);
+        assert.deepEqual((await db!.query("SELECT id,username,password_hash FROM users ORDER BY id")).rows,identities);
+      } finally {
+        assert.equal(dirname(fixture),resolve(temporaryRoot));
+        assert.match(fixture.slice(resolve(temporaryRoot).length),/^[/\\]migration-fixture-[a-f0-9-]{36}$/);
+        await rm(fixture,{recursive:true});
+      }
+      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 2);
     });
     await grantRuntimeAccess(db);
     const runtimeTarget = new URL(process.env.DATABASE_URL!); runtimeTarget.pathname = `/${name}`;
     runtime = new Pool({ connectionString: runtimeTarget.toString() });
-    const credentials = [{ username: "test-owner", password: randomBytes(20).toString("hex") },
-      { username: "test-mother", password: randomBytes(20).toString("hex") }];
     await check("seed repeats without resetting existing hashes", async () => {
       await seedDevelopment(db!, credentials);
       const before = (await db!.query("SELECT id,password_hash FROM users ORDER BY id")).rows;
@@ -112,6 +136,67 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
       assert.equal(result.status,200);
       return {cookie:result.headers["set-cookie"][0].split(";")[0],csrf:result.body.data.csrfToken as string,anon};
     }
+    await check("catalog writes are exact, scoped, audited and replayable",async () => {
+      const owner=await login();
+      const stores=(await request(app).get("/api/v1/stores").set("Cookie",owner.cookie)).body.data;
+      const storeId=stores[0].id; const otherStoreId=stores[1].id; const key=randomUUID();
+      const post=(body:object,idempotency=key) => request(app).post(`/api/v1/stores/${storeId}/products`)
+        .set("Cookie",owner.cookie).set("Origin",authConfig.origin).set("X-CSRF-Token",owner.csrf).set("Idempotency-Key",idempotency).send(body);
+      const input={name:"ก๋วยเตี๋ยว",price:"4500"};
+      const created=await post(input); assert.equal(created.status,201); productResponseSchema.parse(created.body);
+      const replay=await post(input); assert.equal(replay.status,201); assert.deepEqual(replay.body,created.body);
+      assert.equal((await post({...input,price:"4600"})).status,409);
+      const simultaneous=await Promise.all([post({name:"ขนมปัง",price:"2500"},"a2933b38-acbc-4b6f-bac1-000000000001"),post({name:"ขนมปัง",price:"2500"},"a2933b38-acbc-4b6f-bac1-000000000001")]);
+      assert.equal(simultaneous[0]!.status,201); assert.deepEqual(simultaneous[0]!.body,simultaneous[1]!.body);
+      const productId=created.body.data.id;
+      const patch=(expectedVersion:number,price:string) => request(app).patch(`/api/v1/stores/${storeId}/products/${productId}`)
+        .set("Cookie",owner.cookie).set("Origin",authConfig.origin).set("X-CSRF-Token",owner.csrf)
+        .set("Idempotency-Key",randomUUID()).send({price,expectedVersion});
+      const updates=await Promise.all([patch(1,"4700"),patch(1,"4800")]);
+      assert.deepEqual(updates.map((r)=>r.status).sort(),[200,409]);
+      const changed=updates.find((r)=>r.status===200)!; productResponseSchema.parse(changed.body); assert.equal(changed.body.data.version,2);
+      const stale=updates.find((r)=>r.status===409)!; assert.equal(stale.body.error.code,"PRICE_CHANGED");
+      assert.equal(stale.body.error.details.product.version,2);
+      assert.equal((await db!.query("SELECT count(*)::int AS n FROM audit_logs WHERE entity_id=$1",[productId])).rows[0].n,2);
+      assert.equal((await db!.query("SELECT count(*)::int AS n FROM idempotency_records WHERE resource_id=$1",[productId])).rows[0].n,2);
+      const first=await request(app).get(`/api/v1/stores/${storeId}/products?limit=1`).set("Cookie",owner.cookie);
+      assert.equal(first.status,200); productListResponseSchema.parse(first.body); assert.ok(first.body.page.nextCursor);
+      const next=await request(app).get(`/api/v1/stores/${storeId}/products`).query({limit:1,cursor:first.body.page.nextCursor}).set("Cookie",owner.cookie);
+      assert.equal(next.status,200); assert.notEqual(next.body.data[0].id,first.body.data[0].id); assert.equal(next.body.page.nextCursor,null);
+      const crossCursor=await request(app).get(`/api/v1/stores/${otherStoreId}/products`).query({cursor:first.body.page.nextCursor}).set("Cookie",owner.cookie);
+      assert.equal(crossCursor.status,400);
+      const invalid=await post({...input,price:"1.5"},randomUUID()); assert.equal(invalid.status,400);
+      await assert.rejects(db!.query("INSERT INTO products(business_id,store_id,name,price,created_by) VALUES($1,$2,'bad',0,$3)",
+        [business,storeId,user]),{code:"23514",constraint:"products_price"});
+      await assert.rejects(db!.query("INSERT INTO products(business_id,store_id,name,price,created_by) VALUES($1,$2,'bad',1,$3)",
+        [otherBusiness,storeId,user]),{code:"23503"});
+      const failedKey=randomUUID();
+      await db!.query("ALTER TABLE audit_logs ADD CONSTRAINT test_reject_catalog_audit CHECK (action <> 'PRODUCT_CREATED' OR after_data->>'name' <> 'rollback-menu')");
+      try {
+        assert.equal((await post({name:"rollback-menu",price:"1000"},failedKey)).status,500);
+        assert.equal((await db!.query("SELECT count(*)::int AS n FROM products WHERE name='rollback-menu'")).rows[0].n,0);
+        assert.equal((await db!.query("SELECT count(*)::int AS n FROM idempotency_records WHERE key=$1",[failedKey])).rows[0].n,0);
+      } finally { await db!.query("ALTER TABLE audit_logs DROP CONSTRAINT test_reject_catalog_audit"); }
+      assert.equal((await request(app).post(`/api/v1/stores/${storeId}/products`).set("Cookie",owner.cookie).set("Origin",authConfig.origin).send(input)).status,403);
+      const deactivate=await request(app).patch(`/api/v1/stores/${storeId}/products/${productId}`)
+        .set("Cookie",owner.cookie).set("Origin",authConfig.origin).set("X-CSRF-Token",owner.csrf)
+        .set("Idempotency-Key",randomUUID()).send({active:false,expectedVersion:2});
+      assert.equal(deactivate.status,200); assert.equal(deactivate.body.data.version,3); assert.equal(deactivate.body.data.active,false);
+      const inactive=await request(app).get(`/api/v1/stores/${storeId}/products?active=false`).set("Cookie",owner.cookie);
+      assert.equal(inactive.status,200); assert.equal(inactive.body.data[0].id,productId);
+      await assert.rejects(runtime!.query("UPDATE idempotency_records SET response_body='{}' WHERE key=$1",[key]),{code:"23514"});
+      await assert.rejects(runtime!.query("INSERT INTO idempotency_records(business_id,user_id,key,method,path,payload_hash,response_status,response_body) VALUES($1,$2,$3,'POST','/test',$4,200,'{}')",
+        [business,(await auth.resolve(owner.cookie.split("=")[1]))!.user_id,randomUUID(),randomBytes(32)]),{code:"23514"});
+      await db!.query("UPDATE business_memberships SET role='MEMBER' WHERE user_id=(SELECT id FROM users WHERE username=$1)",[credentials[0]!.username]);
+      await db!.query("INSERT INTO store_memberships(business_id,store_id,user_id,role,created_by) SELECT $1,$2,id,'STAFF',id FROM users WHERE username=$3",[business,storeId,credentials[0]!.username]);
+      assert.equal((await post(input)).status,403); // Replay cannot bypass changed role.
+      assert.equal((await request(app).get(`/api/v1/stores/${storeId}/products`).set("Cookie",owner.cookie)).status,200);
+      assert.equal((await request(app).get(`/api/v1/stores/${storeId}/products?active=false`).set("Cookie",owner.cookie)).status,403);
+      assert.equal((await request(app).get(`/api/v1/stores/${otherStoreId}/products`).set("Cookie",owner.cookie)).status,404);
+      await db!.query("UPDATE business_memberships SET role='OWNER' WHERE user_id=(SELECT id FROM users WHERE username=$1)",[credentials[0]!.username]);
+      await db!.query("DELETE FROM store_memberships WHERE user_id=(SELECT id FROM users WHERE username=$1)",[credentials[0]!.username]);
+      await db!.query("DELETE FROM login_attempts");
+    });
     await check("login rotates session and stores only token digests",async () => {
       const logged = await login();
       assert.notEqual(logged.cookie,logged.anon.cookie);
@@ -237,10 +322,11 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
       assert.match(header,/Path=\//); assert.match(header,/SameSite=Lax/); assert.ok(!header.includes("Domain="));
     });
     await check("tampered migration journal fails closed", async () => {
-      const original = (await db!.query("SELECT hash FROM drizzle.__drizzle_migrations")).rows[0].hash;
+      const original = (await db!.query("SELECT hash,created_at FROM drizzle.__drizzle_migrations")).rows;
       await db!.query("UPDATE drizzle.__drizzle_migrations SET hash='tampered'");
       await assert.rejects(migrateDatabase(db!), /checksum mismatch/);
-      await db!.query("UPDATE drizzle.__drizzle_migrations SET hash=$1", [original]);
+      for(const row of original) await db!.query("UPDATE drizzle.__drizzle_migrations SET hash=$1 WHERE created_at=$2",[row.hash,row.created_at]);
+      await migrateDatabase(db!);
     });
     console.log(`${checks} database integration checks passed`);
   } finally {

@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from "./errors.js";
 import { createHttpLogger } from "./logger.js";
 import { authRouter } from "./modules/auth/routes.js";
 import type { AuthService } from "./modules/auth/service.js";
+import { catalogRouter } from "./modules/catalog/routes.js";
 
 export function createApp({ logger, config, auth }: { logger: Logger; config: AppConfig; auth?: AuthService }) {
   const app = express();
@@ -25,6 +26,7 @@ export function createApp({ logger, config, auth }: { logger: Logger; config: Ap
     res.json(body);
   });
   if (auth) app.use("/api/v1", authRouter(auth));
+  if (auth) app.use("/api/v1", catalogRouter(auth));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

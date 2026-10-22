@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, customType, foreignKey, index, integer, jsonb, pgTable,
+import { bigint, boolean, check, customType, foreignKey, index, integer, jsonb, pgTable,
   text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
@@ -75,3 +75,25 @@ export const auditLogs = pgTable("audit_logs", {
   name: "audit_logs_actor_scope_fk" }), foreignKey({ columns: [t.businessId, t.storeId], foreignColumns: [stores.businessId, stores.id],
   name: "audit_logs_store_scope_fk" }), index("audit_logs_store_time_idx").on(t.businessId, t.storeId, t.createdAt),
   index("audit_logs_entity_idx").on(t.businessId, t.entityType, t.entityId, t.createdAt)]);
+
+export const products = pgTable("products", {
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),
+  name:text("name").notNull(),price:bigint("price",{mode:"bigint"}).notNull(),
+  version:integer("version").notNull().default(1),active:boolean("active").notNull().default(true),
+  createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t) => [unique("products_scope_uq").on(t.businessId,t.storeId,t.id),
+  foreignKey({columns:[t.businessId,t.storeId],foreignColumns:[stores.businessId,stores.id],name:"products_store_scope_fk"}),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"products_actor_scope_fk"}),
+  check("products_price",sql`${t.price} > 0 and ${t.price} <= 9000000000000`),
+  check("products_name",sql`length(trim(${t.name})) between 1 and 120`),
+  check("products_version",sql`${t.version} > 0`),index("products_listing_idx").on(t.businessId,t.storeId,t.active,t.name,t.id)]);
+
+export const idempotencyRecords = pgTable("idempotency_records", {
+  id:id(),businessId:uuid("business_id").notNull(),userId:uuid("user_id").notNull(),key:uuid("key").notNull(),
+  method:text("method").notNull(),path:text("path").notNull(),payloadHash:bytea("payload_hash").notNull(),
+  responseStatus:integer("response_status").notNull(),responseBody:jsonb("response_body").notNull(),
+  resourceId:uuid("resource_id"),createdAt:createdAt(),
+},(t) => [unique("idempotency_records_key_uq").on(t.businessId,t.userId,t.key),
+  foreignKey({columns:[t.businessId,t.userId],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"idempotency_records_user_scope_fk"}),
+  check("idempotency_records_hash",sql`octet_length(${t.payloadHash}) = 32`),
+  check("idempotency_records_status",sql`${t.responseStatus} between 200 and 299`),index("idempotency_records_time_idx").on(t.businessId,t.createdAt)]);

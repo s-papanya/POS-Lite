@@ -20,11 +20,22 @@ export const meResponseSchema: z.ZodType<MeResponse> = z.strictObject({data:z.st
   businessRole:z.literal("OWNER").nullable(),stores:z.array(accessibleStoreSchema),
 })});
 export const loginRequestSchema = z.strictObject({username:z.string().min(3).max(64),password:z.string().min(1).max(128),businessId:z.uuid().optional()});
+export const positiveMoneySchema = z.string().regex(/^[1-9][0-9]{0,12}$/)
+  .pipe(z.string().refine((value) => BigInt(value) <= 9000000000000n));
+export const createProductSchema = z.strictObject({name:z.string().trim().min(1).max(120),price:positiveMoneySchema});
+export const updateProductSchema = z.strictObject({name:z.string().trim().min(1).max(120).optional(),
+  price:positiveMoneySchema.optional(),active:z.boolean().optional(),expectedVersion:z.number().int().min(1).max(2147483646)})
+  .refine((value) => value.name !== undefined || value.price !== undefined || value.active !== undefined);
+export const productSchema = z.strictObject({id:z.uuid(),name:z.string().min(1).max(120),price:positiveMoneySchema,
+  version:z.number().int().positive(),active:z.boolean()});
+export const productResponseSchema = z.strictObject({data:productSchema});
+export const productListResponseSchema = z.strictObject({data:z.array(productSchema),page:z.strictObject({nextCursor:z.string().nullable()})});
 
 export const apiErrorResponseSchema: z.ZodType<ApiErrorResponse> = z.strictObject({
   error: z.strictObject({
     code: z.string().min(1),
     message: z.string().min(1),
     requestId: z.uuid(),
+    details: z.record(z.string(),z.unknown()).optional(),
   }),
 });

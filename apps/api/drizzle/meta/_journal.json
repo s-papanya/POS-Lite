@@ -8,6 +8,13 @@
       "when": 1792629668297,
       "tag": "0000_identity_access",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792631282348,
+      "tag": "0001_catalog",
+      "breakpoints": true
     }
   ]
 }
