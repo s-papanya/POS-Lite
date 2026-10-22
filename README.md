@@ -20,7 +20,7 @@
 | Tooling | npm workspaces/lockfile เดียว, shared contracts, Vitest/Supertest, build/typecheck/lint/test |
 | ระบบใช้งานจริง | ยังไม่มี POS, ledger, ปิดวัน หรือรายงาน |
 
-M0 ยังรอยืนยันนโยบาย P4/P5; F2 ผ่าน local validation แล้ว ยังไม่ได้ปิด milestone บน GitHub
+P1–P5 ยืนยันแล้ว; F2 ผ่าน local validation แล้ว ยังไม่ได้ปิด milestone บน GitHub
 ดู [ผลตรวจ F1](docs/foundation-validation.md) และ [F2/วิธีใช้ฐานข้อมูล](docs/access-validation.md)
 ดูสถานะและเงื่อนไขปิดงานใน [milestones.md](docs/milestones.md)
 

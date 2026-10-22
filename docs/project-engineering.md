@@ -38,7 +38,7 @@ Python design checks ไม่ใช่ application tests; [ผลตรวจ F
 
 คำสั่งล่าสุดของเจ้าของมีลำดับเหนือ conventions; สถานะจริงตรวจจากโค้ด/config
 กฎที่ตกลงอยู่ใน [requirements](product-requirements.md) และ [domain rules](domain-rules.md)
-P1–P3 ยืนยันแล้ว; P4/P5 ยังรอยืนยัน skill ไม่ใช่การอนุมัติแทนเจ้าของ
+P1–P5 ยืนยันแล้วตาม product-requirements.md; skills ไม่เพิ่มสิทธิ์นอกคำสั่งเจ้าของ
 
 - Code/identifiers เป็นอังกฤษ; UI และคำอธิบายเจ้าของเป็นไทย
 - camelCase variables/functions; PascalCase components/types; UPPER_SNAKE_CASE module constants

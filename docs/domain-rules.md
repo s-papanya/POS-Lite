@@ -1,6 +1,6 @@
 # กฎธุรกิจและ transaction boundaries
 
-นโยบาย P1–P3 ยืนยันแล้ว; P4–P5 ยังรอยืนยันตาม product-requirements.md
+นโยบาย P1–P5 ยืนยันแล้วตาม product-requirements.md (P4/P5 ยืนยันวันที่ 22 ตุลาคม 2026)
 
 ## เงิน เวลา และยอดขาย
 
