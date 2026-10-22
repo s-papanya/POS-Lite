@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { healthResponseSchema } from '@pos-lite/validation'
 import './App.css'
+import { StoreAccess } from './StoreAccess'
 
 function App() {
   const [status, setStatus] = useState<'checking' | 'ready' | 'error' | 'offline'>('checking')
@@ -63,16 +64,18 @@ function App() {
             </button>
           </div>
         </section>
+        <div><StoreAccess />
         <section className="preparation" aria-labelledby="preparation-title">
           <h2 id="preparation-title">กำลังเตรียมพร้อมสำหรับร้านของเรา</h2>
           <p>ตอนนี้ยังไม่เปิดบันทึกรายการจริง<br />เรากำลังวางระบบให้พร้อมใช้งานทีละส่วน</p>
           <ul>
-            <li><strong>เลือกร้านและเข้าสู่ระบบ</strong><span>จัดการข้อมูลของแต่ละร้านอย่างเป็นส่วนตัว</span></li>
+            <li><strong>เลือกร้านและเข้าสู่ระบบได้แล้ว</strong><span>แสดงเฉพาะร้านที่บัญชีของคุณมีสิทธิ์</span></li>
             <li><strong>บันทึกขายและรายจ่าย</strong><span>รู้ว่าเงินเข้าออกจากอะไร</span></li>
             <li><strong>ตรวจเงินสดและปิดวัน</strong><span>เห็นยอดที่บันทึกและเงินที่นับได้ชัดเจน</span></li>
           </ul>
           <p className="preparation-note">การเชื่อมต่อสำเร็จยังไม่ได้หมายความว่าบันทึกยอดขายได้แล้ว</p>
         </section>
+        </div>
       </main>
       <footer>พัฒนาเพื่อการดูแลร้านของครอบครัว</footer>
     </>

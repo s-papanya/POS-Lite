@@ -33,6 +33,17 @@ h2 { font-size: 22px; line-height: 1.6; }
 .preparation span { color: var(--color-muted); margin-top: 4px; }
 .preparation .preparation-note { margin-top: 28px; font-size: 16px; }
 footer { max-width: 1200px; padding: 24px 32px; margin: auto; color: var(--color-muted); font-size: 16px; }
+.store-access { padding-bottom: 32px; border-bottom: 1px solid var(--color-border); margin-bottom: 32px; }
+.store-access form { display: grid; gap: 12px; margin-top: 20px; }
+.store-access input { min-width: 0; width: 100%; min-height: 48px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 8px; font: inherit; }
+.store-access button { min-height: 48px; border: 1px solid var(--color-primary); background: var(--color-primary); color: white; border-radius: 8px; padding: 10px 16px; }
+.store-access button:disabled { opacity: .65; }
+.store-access .secondary-action { background: white; color: var(--color-primary); margin-top: 12px; }
+.store-access p { margin-top: 16px; overflow-wrap: anywhere; }
+.store-list { display: grid; gap: 12px; margin-top: 24px; }
+.store-list button { text-align: left; background: white; color: var(--color-primary); }
+.store-list button[aria-pressed='true'] { background: var(--color-primary); color: white; }
+.store-list strong, .store-list span { display: block; }
 @media (max-width: 720px) {
   .site-header { padding: 20px; flex-direction: column; gap: 2px; }
   .site-header span:last-child { font-size: 16px; }
