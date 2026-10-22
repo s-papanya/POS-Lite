@@ -97,3 +97,39 @@ export const idempotencyRecords = pgTable("idempotency_records", {
   foreignKey({columns:[t.businessId,t.userId],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"idempotency_records_user_scope_fk"}),
   check("idempotency_records_hash",sql`octet_length(${t.payloadHash}) = 32`),
   check("idempotency_records_status",sql`${t.responseStatus} between 200 and 299`),index("idempotency_records_time_idx").on(t.businessId,t.createdAt)]);
+
+export const financialAccounts = pgTable("financial_accounts",{
+  id:id(),businessId:uuid("business_id").notNull().references(()=>businesses.id),name:text("name").notNull(),
+  type:text("type").notNull(),active:boolean("active").notNull().default(true),createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t)=>[unique("financial_accounts_scope_uq").on(t.businessId,t.id),unique("financial_accounts_name_uq").on(t.businessId,t.name),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"financial_accounts_actor_fk"}),
+  check("financial_accounts_type",sql`${t.type} in ('CASH','BANK')`),check("financial_accounts_name",sql`length(trim(${t.name})) between 1 and 120`)]);
+export const accountStores = pgTable("account_stores",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),accountId:uuid("account_id").notNull(),
+  createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t)=>[unique("account_stores_scope_uq").on(t.businessId,t.storeId,t.accountId),
+  foreignKey({columns:[t.businessId,t.storeId],foreignColumns:[stores.businessId,stores.id],name:"account_stores_store_fk"}),
+  foreignKey({columns:[t.businessId,t.accountId],foreignColumns:[financialAccounts.businessId,financialAccounts.id],name:"account_stores_account_fk"}),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"account_stores_actor_fk"}),
+  index("account_stores_account_idx").on(t.businessId,t.accountId)]);
+export const accountOpenings = pgTable("account_openings",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),accountId:uuid("account_id").notNull(),
+  amount:bigint("amount",{mode:"bigint"}).notNull(),cutoverAt:timestamp("cutover_at",{withTimezone:true}).notNull(),
+  reason:text("reason").notNull(),createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t)=>[unique("account_openings_account_uq").on(t.businessId,t.accountId),
+  unique("account_openings_source_uq").on(t.businessId,t.storeId,t.accountId,t.id),
+  foreignKey({columns:[t.businessId,t.storeId,t.accountId],foreignColumns:[accountStores.businessId,accountStores.storeId,accountStores.accountId],name:"account_openings_mapping_fk"}),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"account_openings_actor_fk"}),
+  check("account_openings_amount",sql`${t.amount} between 0 and 9000000000000`),
+  check("account_openings_cutover",sql`${t.cutoverAt} <= ${t.createdAt}`),
+  check("account_openings_reason",sql`length(trim(${t.reason})) between 1 and 1000`)]);
+export const moneyMovements = pgTable("money_movements",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),accountId:uuid("account_id").notNull(),
+  accountOpeningId:uuid("account_opening_id").notNull(),delta:bigint("delta",{mode:"bigint"}).notNull(),
+  createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t)=>[unique("money_movements_opening_uq").on(t.accountOpeningId),
+  foreignKey({columns:[t.businessId,t.storeId,t.accountId,t.accountOpeningId],
+    foreignColumns:[accountOpenings.businessId,accountOpenings.storeId,accountOpenings.accountId,accountOpenings.id],name:"money_movements_opening_scope_fk"}),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"money_movements_actor_fk"}),
+  check("money_movements_delta",sql`${t.delta} > 0 and ${t.delta} <= 9000000000000`),
+  index("money_movements_balance_idx").on(t.businessId,t.accountId,t.createdAt,t.id)]);

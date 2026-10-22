@@ -10,6 +10,7 @@ import { createLogger } from "../src/logger.js";
 import { AuthService } from "../src/modules/auth/service.js";
 import { csrfResponseSchema, meResponseSchema, storeListResponseSchema, storeResponseSchema, logoutResponseSchema } from "@pos-lite/validation";
 import { productResponseSchema, productListResponseSchema } from "@pos-lite/validation";
+import { accountResponseSchema, accountOpeningResponseSchema, accountListResponseSchema } from "@pos-lite/validation";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -53,7 +54,7 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
     await verifyOwnership();
     const credentials = [{ username: "test-owner", password: randomBytes(20).toString("hex") },
       { username: "test-mother", password: randomBytes(20).toString("hex") }];
-    await check("F2 migration then catalog upgrade preserve identity fixtures", async () => {
+    await check("S1a to accounts upgrade preserves identity, catalog, audit and replay fixtures", async () => {
       const migrationRoot=fileURLToPath(new URL("../drizzle/",import.meta.url));
       const temporaryRoot=fileURLToPath(new URL("../../../.tmp/",import.meta.url));
       await mkdir(temporaryRoot,{recursive:true});
@@ -61,20 +62,31 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
       await mkdir(fixture); await mkdir(resolve(fixture,"meta"));
       try {
         const journal=JSON.parse(await readFile(resolve(migrationRoot,"meta/_journal.json"),"utf8"));
-        journal.entries=journal.entries.slice(0,1);
+        journal.entries=journal.entries.slice(0,2);
         await writeFile(resolve(fixture,"meta/_journal.json"),JSON.stringify(journal));
         await copyFile(resolve(migrationRoot,"0000_identity_access.sql"),resolve(fixture,"0000_identity_access.sql"));
+        await copyFile(resolve(migrationRoot,"0001_catalog.sql"),resolve(fixture,"0001_catalog.sql"));
         await migrate(drizzle(db!),{migrationsFolder:fixture});
         await seedDevelopment(db!,credentials);
         const identities=(await db!.query("SELECT id,username,password_hash FROM users ORDER BY id")).rows;
+        const owner=(await db!.query("SELECT id FROM users WHERE username=$1",[credentials[0]!.username])).rows[0].id;
+        const store=(await db!.query("SELECT id,business_id FROM stores WHERE code='NOODLE'")).rows[0];
+        const product=(await db!.query("INSERT INTO products(business_id,store_id,name,price,active,created_by) VALUES($1,$2,'Upgrade fixture',1200,false,$3) RETURNING id",[store.business_id,store.id,owner])).rows[0].id;
+        await db!.query("INSERT INTO audit_logs(business_id,store_id,actor_user_id,action,entity_type,entity_id,request_id) VALUES($1,$2,$3,'UPGRADE_FIXTURE','product',$4,$5)",[store.business_id,store.id,owner,product,randomUUID()]);
+        await db!.query("INSERT INTO idempotency_records(business_id,user_id,key,method,path,payload_hash,response_status,response_body,resource_id) VALUES($1,$2,$3,'POST','/fixture',$4,201,$5,$6)",
+          [store.business_id,owner,randomUUID(),randomBytes(32),{data:{id:product}},product]);
+        const queries=["SELECT * FROM products ORDER BY id","SELECT * FROM audit_logs ORDER BY id","SELECT * FROM idempotency_records ORDER BY id"];
+        const before=await Promise.all(queries.map(async(sql)=>(await db!.query(sql)).rows));
         await migrateDatabase(db!); await migrateDatabase(db!);
         assert.deepEqual((await db!.query("SELECT id,username,password_hash FROM users ORDER BY id")).rows,identities);
+        assert.deepEqual(await Promise.all(queries.map(async(sql)=>(await db!.query(sql)).rows)),before);
+        assert.equal((await db!.query("SELECT count(*)::int AS n FROM money_movements")).rows[0].n,0);
       } finally {
         assert.equal(dirname(fixture),resolve(temporaryRoot));
         assert.match(fixture.slice(resolve(temporaryRoot).length),/^[/\\]migration-fixture-[a-f0-9-]{36}$/);
         await rm(fixture,{recursive:true});
       }
-      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 2);
+      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 3);
     });
     await grantRuntimeAccess(db);
     const runtimeTarget = new URL(process.env.DATABASE_URL!); runtimeTarget.pathname = `/${name}`;
@@ -136,6 +148,96 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
       assert.equal(result.status,200);
       return {cookie:result.headers["set-cookie"][0].split(";")[0],csrf:result.body.data.csrfToken as string,anon};
     }
+    await check("accounts and opening ledger preserve scope, atomicity and replay",async () => {
+      const owner=await login();
+      const stores=(await request(app).get("/api/v1/stores").set("Cookie",owner.cookie)).body.data;
+      const first=stores[0].id as string; const second=stores[1].id as string;
+      const actor=(await auth.resolve(owner.cookie.split("=")[1]))!.user_id!;
+      const send=(path:string,body:object,key=randomUUID(),method:"post" | "patch"="post")=>request(app)[method](`/api/v1${path}`)
+        .set("Cookie",owner.cookie).set("Origin",authConfig.origin).set("X-CSRF-Token",owner.csrf).set("Idempotency-Key",key).send(body);
+      const make=async(name:string,type:"CASH" | "BANK",storeIds=[first])=>{
+        const result=await send("/accounts",{name,type,storeIds}); assert.equal(result.status,201); accountResponseSchema.parse(result.body); return result.body.data;
+      };
+      assert.equal((await send("/accounts",{name:"bad cash",type:"CASH",storeIds:[first,second]})).status,400);
+      assert.equal((await send("/accounts",{name:"foreign",type:"BANK",storeIds:[randomUUID()]})).status,404);
+      const bankKey=randomUUID(); const input={name:"shared bank",type:"BANK",storeIds:[first,second]};
+      const bank=await send("/accounts",input,bankKey); assert.equal(bank.status,201); accountResponseSchema.parse(bank.body);
+      assert.deepEqual((await send("/accounts",input,bankKey)).body,bank.body);
+      assert.equal((await send("/accounts",{...input,name:"changed"},bankKey)).status,409);
+      assert.equal((await send("/accounts",input)).status,409);
+      const cash=await make("cash first","CASH"); const zero=await make("cash second","CASH",[second]);
+      const opening={storeId:first,amount:"9000000000000",cutoverAt:"2000-01-01T00:00:00.000Z",reason:"ยอดก่อนเริ่มระบบ"};
+      const openingKey=randomUUID(); const path=`/accounts/${bank.body.data.id}/opening`;
+      const concurrent=await Promise.all([send(path,opening,openingKey),send(path,opening,openingKey)]);
+      assert.equal(concurrent[0]!.status,201); assert.equal(concurrent[1]!.status,201); assert.deepEqual(concurrent[0]!.body,concurrent[1]!.body);
+      accountOpeningResponseSchema.parse(concurrent[0]!.body);
+      const bankOpening=concurrent[0]!.body.data;
+      assert.equal((await db!.query("SELECT sum(delta)::text AS balance,count(*)::int AS n FROM money_movements WHERE account_id=$1",[bank.body.data.id])).rows[0].balance,"9000000000000");
+      assert.equal((await db!.query("SELECT count(*)::int AS n FROM money_movements WHERE account_id=$1",[bank.body.data.id])).rows[0].n,1);
+      assert.equal((await db!.query("SELECT count(*)::int AS n FROM audit_logs WHERE entity_id=$1",[bankOpening.id])).rows[0].n,1);
+      assert.equal((await send(path,opening)).status,409);
+      const cashPath=`/accounts/${cash.id}/opening`;
+      const races=await Promise.all([send(cashPath,{...opening,amount:"50000"}),send(cashPath,{...opening,amount:"50000"})]);
+      assert.deepEqual(races.map((r)=>r.status).sort(),[201,409]);
+      assert.equal((await db!.query("SELECT sum(delta)::text AS balance FROM money_movements WHERE account_id=$1",[cash.id])).rows[0].balance,"50000");
+      const zeroResult=await send(`/accounts/${zero.id}/opening`,{...opening,storeId:second,amount:"0"});
+      assert.equal(zeroResult.status,201); assert.equal((await db!.query("SELECT count(*)::int AS n FROM money_movements WHERE account_id=$1",[zero.id])).rows[0].n,0);
+      const pending=await make("pending opening","BANK");
+      assert.equal((await send(`/accounts/${pending.id}/opening`,{...opening,cutoverAt:"2099-01-01T00:00:00.000Z"})).status,422);
+      assert.equal((await send(`/accounts/${pending.id}/opening`,{...opening,storeId:second})).status,404);
+      assert.equal((await send(`/accounts/${pending.id}`,{type:"CASH"},randomUUID(),"patch")).status,400);
+      const updated=await send(`/accounts/${pending.id}`,{name:"renamed",active:false},randomUUID(),"patch"); assert.equal(updated.status,200); accountResponseSchema.parse(updated.body);
+      assert.equal((await send(`/accounts/${pending.id}/opening`,opening)).status,422);
+      await send(`/accounts/${pending.id}`,{active:true},randomUUID(),"patch");
+      const failureKey=randomUUID();
+      await db!.query(`ALTER TABLE audit_logs ADD CONSTRAINT test_reject_opening_audit CHECK (action<>'ACCOUNT_OPENED' OR after_data->>'accountId'<>'${pending.id}')`);
+      try {
+        assert.equal((await send(`/accounts/${pending.id}/opening`,opening,failureKey)).status,500);
+        for(const table of ["account_openings","money_movements"]) assert.equal((await db!.query(`SELECT count(*)::int AS n FROM ${table} WHERE account_id=$1`,[pending.id])).rows[0].n,0);
+        assert.equal((await db!.query("SELECT count(*)::int AS n FROM idempotency_records WHERE key=$1",[failureKey])).rows[0].n,0);
+      } finally {await db!.query("ALTER TABLE audit_logs DROP CONSTRAINT test_reject_opening_audit");}
+      await assert.rejects(runtime!.query("UPDATE money_movements SET delta=1"),{code:"42501"});
+      await assert.rejects(runtime!.query("DELETE FROM account_openings"),{code:"42501"});
+      await assert.rejects(runtime!.query("DELETE FROM account_stores"),{code:"42501"});
+      await assert.rejects(runtime!.query("UPDATE financial_accounts SET type='BANK' WHERE id=$1",[cash.id]),{code:"42501"});
+      await assert.rejects(runtime!.query("INSERT INTO financial_accounts(business_id,name,type,created_by) VALUES($1,'unmapped','BANK',$2)",[business,actor]),{code:"23514"});
+      await assert.rejects(runtime!.query("INSERT INTO account_stores(business_id,store_id,account_id,created_by) VALUES($1,$2,$3,$4)",[business,second,cash.id,actor]),{code:"23514"});
+      await assert.rejects(runtime!.query("INSERT INTO account_openings(business_id,store_id,account_id,amount,cutover_at,reason,created_by) VALUES($1,$2,$3,100,'2000-01-01','missing posting',$4)",[business,first,pending.id,actor]),{code:"23514"});
+      await assert.rejects(transaction(runtime!,async(client)=>{
+        const source=(await client.query("INSERT INTO account_openings(business_id,store_id,account_id,amount,cutover_at,reason,created_by) VALUES($1,$2,$3,100,'2000-01-01','wrong posting',$4) RETURNING id",[business,first,pending.id,actor])).rows[0].id;
+        await client.query("INSERT INTO money_movements(business_id,store_id,account_id,account_opening_id,delta,created_by) VALUES($1,$2,$3,$4,99,$5)",[business,first,pending.id,source,actor]);
+      }),{code:"23514"});
+      await assert.rejects(runtime!.query("INSERT INTO money_movements(business_id,store_id,account_id,account_opening_id,delta,created_by) VALUES($1,$2,$3,$4,1,$5)",
+        [business,first,cash.id,zeroResult.body.data.id,actor]),{code:"23503"});
+      await assert.rejects(runtime!.query("INSERT INTO money_movements(business_id,store_id,account_id,account_opening_id,delta,created_by) VALUES($1,$2,$3,$4,1,$5)",
+        [business,second,zero.id,zeroResult.body.data.id,actor]),{code:"23514"});
+      await assert.rejects(runtime!.query("INSERT INTO account_openings(business_id,store_id,account_id,amount,cutover_at,reason,created_by) VALUES($1,$2,$3,0,'2099-01-01','future',$4)",
+        [business,first,pending.id,actor]),{code:"23514",constraint:"account_openings_cutover"});
+      const foreignActor=(await db!.query("SELECT id FROM users WHERE username=$1",[credentials[1]!.username])).rows[0].id;
+      const foreignAccount=randomUUID(); const foreignStore=randomUUID();
+      await transaction(db!,async(client)=>{
+        await client.query("INSERT INTO business_memberships(business_id,user_id,role,created_by) VALUES($1,$2,'OWNER',$2)",[otherBusiness,foreignActor]);
+        await client.query("INSERT INTO stores(id,business_id,name,code,created_by) VALUES($1,$2,'Other account store','ACCOUNT_FOREIGN',$3)",[foreignStore,otherBusiness,foreignActor]);
+        await client.query("INSERT INTO financial_accounts(id,business_id,name,type,created_by) VALUES($1,$2,'Other account','BANK',$3)",[foreignAccount,otherBusiness,foreignActor]);
+        await client.query("INSERT INTO account_stores(business_id,store_id,account_id,created_by) VALUES($1,$2,$3,$4)",[otherBusiness,foreignStore,foreignAccount,foreignActor]);
+      });
+      assert.equal((await send(`/accounts/${foreignAccount}/opening`,opening)).status,404);
+      assert.equal((await send(`/accounts/${foreignAccount}`,{name:"forbidden"},randomUUID(),"patch")).status,404);
+      const page=await request(app).get(`/api/v1/stores/${first}/accounts?limit=1`).set("Cookie",owner.cookie);
+      assert.equal(page.status,200); accountListResponseSchema.parse(page.body); assert.ok(page.body.page.nextCursor);
+      const next=await request(app).get(`/api/v1/stores/${first}/accounts`).query({limit:1,cursor:page.body.page.nextCursor}).set("Cookie",owner.cookie);
+      assert.notEqual(page.body.data[0].id,next.body.data[0].id);
+      await db!.query("UPDATE business_memberships SET role='MEMBER' WHERE user_id=$1",[actor]);
+      await db!.query("INSERT INTO store_memberships(business_id,store_id,user_id,role,created_by) VALUES($1,$2,$3,'STAFF',$3)",[business,first,actor]);
+      const metadata=await request(app).get(`/api/v1/stores/${first}/accounts`).set("Cookie",owner.cookie);
+      assert.equal(metadata.status,200); assert.ok(metadata.body.data.every((a:object)=>Object.keys(a).sort().join(",")==="id,name,type"));
+      assert.equal((await request(app).get(`/api/v1/stores/${second}/accounts`).set("Cookie",owner.cookie)).status,404);
+      assert.equal((await send(path,opening,openingKey)).status,403);
+      assert.equal((await send("/accounts",input)).status,403);
+      await db!.query("UPDATE business_memberships SET role='OWNER' WHERE user_id=$1",[actor]);
+      await db!.query("DELETE FROM store_memberships WHERE user_id=$1",[actor]);
+      await db!.query("DELETE FROM login_attempts");
+    });
     await check("catalog writes are exact, scoped, audited and replayable",async () => {
       const owner=await login();
       const stores=(await request(app).get("/api/v1/stores").set("Cookie",owner.cookie)).body.data;

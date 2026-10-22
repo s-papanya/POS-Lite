@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import type { Product } from "@pos-lite/shared";
 import { transaction } from "../../db/client.js";
+import { claimIdempotency, completeIdempotency } from "../../db/idempotency.js";
 import type { Session } from "../auth/service.js";
 
 export class CatalogError extends Error {
@@ -39,22 +39,12 @@ export class CatalogService {
     return transaction(this.pool,async (client) => {
       // Current permission is checked before claiming/replaying a key.
       const scope = await this.scope(client,session,storeId,true);
-      const hash=createHash("sha256").update(JSON.stringify({method,path,payload})).digest();
-      const inserted=await client.query<{id:string}>(`INSERT INTO idempotency_records(business_id,user_id,key,method,path,payload_hash,response_status,response_body)
-        VALUES($1,$2,$3,$4,$5,$6,200,'{}') ON CONFLICT(business_id,user_id,key) DO NOTHING RETURNING id`,
-      [scope.businessId,scope.userId,key,method,path,hash]);
+      const claim=await claimIdempotency<Product>(client,session,key,method,path,payload);
       // The unique insert can wait for another transaction; recheck access after that wait.
       await this.scope(client,session,storeId,true);
-      if (!inserted.rowCount) {
-        const stored=(await client.query<{payload_hash:Buffer;response_status:number;response_body:Result["body"]}>(
-          "SELECT payload_hash,response_status,response_body FROM idempotency_records WHERE business_id=$1 AND user_id=$2 AND key=$3",
-          [scope.businessId,scope.userId,key])).rows[0]!;
-        if (!stored.payload_hash.equals(hash)) throw new CatalogError(409,"IDEMPOTENCY_CONFLICT");
-        return {status:stored.response_status,body:stored.response_body};
-      }
+      if (claim.replay) return claim.replay;
       const result=await work(client,scope);
-      await client.query("UPDATE idempotency_records SET response_status=$1,response_body=$2,resource_id=$3 WHERE id=$4",
-        [result.status,result.body,result.body.data.id,inserted.rows[0]!.id]);
+      await completeIdempotency(client,claim.id,result);
       return result;
     });
   }
