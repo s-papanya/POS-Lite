@@ -53,7 +53,26 @@ export const apiErrorResponseSchema: z.ZodType<ApiErrorResponse> = z.strictObjec
     details: z.record(z.string(),z.unknown()).optional(),
   }),
 });
-export const businessDateSchema = z.iso.date();
+export const businessDateSchema = z.iso.date().refine((v)=>v>="0001-01-01");
+const resourceIdSchema=z.uuid().transform((v)=>v.toLowerCase());
+export const saleRequestSchema=z.strictObject({businessDate:businessDateSchema,
+  occurredAt:z.iso.datetime({offset:true}).refine((v)=>new Date(v).getUTCFullYear()>=1 && new Date(v).getUTCFullYear()<=9999).transform((v)=>new Date(v).toISOString()),
+  items:z.array(z.strictObject({productId:resourceIdSchema,expectedVersion:z.number().int().min(1).max(2147483647),quantity:z.number().int().min(1).max(999)})).min(1).max(100),
+  discount:z.discriminatedUnion("kind",[z.strictObject({kind:z.literal("FIXED"),amount:nonnegativeMoneySchema}),
+    z.strictObject({kind:z.literal("PERCENT"),basisPoints:z.number().int().min(0).max(10000)})]),
+  payments:z.array(z.discriminatedUnion("channel",[
+    z.strictObject({accountId:resourceIdSchema,channel:z.literal("CASH"),amount:positiveMoneySchema,tendered:positiveMoneySchema}),
+    z.strictObject({accountId:resourceIdSchema,channel:z.literal("TRANSFER"),amount:positiveMoneySchema})])).min(1).max(100)})
+  .refine((v)=>new Set(v.items.map((i)=>i.productId)).size===v.items.length && new Set(v.payments.map((p)=>p.accountId)).size===v.payments.length);
+export type SaleRequest = z.infer<typeof saleRequestSchema>;
+export const saleSchema=z.strictObject({id:z.uuid(),reference:z.string(),kind:z.literal("POS"),businessDate:businessDateSchema,
+  occurredAt:z.iso.datetime({offset:true}),gross:positiveMoneySchema,discount:nonnegativeMoneySchema,net:positiveMoneySchema,
+  dayRevision:z.string().regex(/^[0-9]+$/),items:z.array(z.strictObject({productId:z.uuid(),nameSnapshot:z.string(),unitPrice:positiveMoneySchema,
+    productVersion:z.number().int().positive(),quantity:z.number().int().min(1).max(999),lineTotal:positiveMoneySchema})),
+  payments:z.array(z.strictObject({id:z.uuid(),accountId:z.uuid(),channel:z.enum(["CASH","TRANSFER"]),amount:positiveMoneySchema,
+    tendered:nonnegativeMoneySchema.nullable(),change:nonnegativeMoneySchema.nullable()}))});
+export const saleResponseSchema=z.strictObject({data:saleSchema});
+export const saleListResponseSchema=z.strictObject({data:z.array(saleSchema),page:z.strictObject({nextCursor:z.string().nullable()})});
 export const openBusinessDaySchema = z.strictObject({businessDate:businessDateSchema});
 export const businessDayResponseSchema = z.strictObject({data:z.strictObject({id:z.uuid(),businessDate:businessDateSchema,
   state:z.enum(["OPEN","CLOSED"]),revision:z.string().regex(/^[0-9]+$/),

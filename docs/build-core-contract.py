@@ -274,8 +274,42 @@ for method, path in [("post", "/stores/{storeId}/business-days"), ("get", "/stor
         operation["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref("BusinessDayOpenRequest")}}}
     paths[path] = {method: operation}
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.6.0",
-    "description": "F1/F2 and S1a-c catalog, accounts and first-day opening implemented. Six sales/closing paths remain design only. See api-contracts.md."},
+SCHEMAS["PosSale"] = {**SCHEMAS["Sale"], "properties": {**SCHEMAS["Sale"]["properties"],
+    "kind": {"type": "string", "const": "POS"}, "businessDate": ref("Date"), "occurredAt": ref("Time")},
+    "required": [*SCHEMAS["Sale"]["required"], "businessDate", "occurredAt"]}
+SCHEMAS["PositiveMoney"] = {"type": "string", "pattern": "^[1-9][0-9]{0,12}$", "description": "Positive satang, maximum 9000000000000"}
+for option in SCHEMAS["PaymentInput"]["oneOf"]:
+    option["properties"]["amount"] = ref("PositiveMoney")
+    if "tendered" in option["properties"]:
+        option["properties"]["tendered"] = ref("PositiveMoney")
+SCHEMAS["SaleRequest"]["description"] = "Unique product IDs and payment account IDs. Server prices, exact payment sum, today Bangkok and no future occurredAt."
+SCHEMAS["SaleResponse"] = obj({"data": ref("PosSale")})
+SCHEMAS["SaleListResponse"] = obj({"data": {"type": "array", "items": ref("PosSale")},
+    "page": obj({"nextCursor": {"type": ["string", "null"]}})})
+sale_path = "/stores/{storeId}/sales"
+post = paths[sale_path]["post"]
+post["x-implemented"] = True
+post["parameters"].append({"name": "Origin", "in": "header", "required": True, "schema": {"type": "string", "format": "uri"}})
+post["responses"]["201"]["content"]["application/json"]["schema"] = ref("SaleResponse")
+for path in [sale_path, sale_path + "/{saleId}"]:
+    params = [{"name": "storeId", "in": "path", "required": True, "schema": ref("Id")}]
+    if path.endswith("{saleId}"):
+        params.append({"name": "saleId", "in": "path", "required": True, "schema": ref("Id")})
+        response = "SaleResponse"
+    else:
+        params += [{"name": name, "in": "query", "required": True, "schema": ref("Date")} for name in ["from", "to"]]
+        params += [{"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}},
+                   {"name": "cursor", "in": "query", "schema": {"type": "string", "maxLength": 2048}}]
+        response = "SaleListResponse"
+    responses = {"200": {"description": "Immutable POS bill snapshots; date range inclusive Asia/Bangkok, maximum 366 days",
+        "content": {"application/json": {"schema": ref(response)}}}}
+    for code in ["400", "401", "403", "404", "500"]:
+        responses[code] = {"description": "Standard error", "content": {"application/json": {"schema": ref("Error")}}}
+    paths.setdefault(path, {})["get"] = {"operationId": "getSale" if path.endswith("{saleId}") else "listSales",
+        "x-implemented": True, "x-permissions": ["OWNER", "MANAGER", "STAFF"], "parameters": params, "responses": responses}
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.7.0",
+    "description": "F1/F2, S1a-c and S2 POS sale/history implemented. Five reconciliation/refund/closing paths remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

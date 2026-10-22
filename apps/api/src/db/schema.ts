@@ -125,9 +125,12 @@ export const accountOpenings = pgTable("account_openings",{
   check("account_openings_reason",sql`length(trim(${t.reason})) between 1 and 1000`)]);
 export const moneyMovements = pgTable("money_movements",{
   id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),accountId:uuid("account_id").notNull(),
-  accountOpeningId:uuid("account_opening_id").notNull(),delta:bigint("delta",{mode:"bigint"}).notNull(),
+  accountOpeningId:uuid("account_opening_id"),salePaymentId:uuid("sale_payment_id"),dayId:uuid("day_id"),delta:bigint("delta",{mode:"bigint"}).notNull(),
   createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
 },(t)=>[unique("money_movements_opening_uq").on(t.accountOpeningId),
+  unique("money_movements_payment_uq").on(t.salePaymentId),
+  foreignKey({columns:[t.businessId,t.storeId,t.dayId,t.accountId,t.salePaymentId],foreignColumns:[salePayments.businessId,salePayments.storeId,salePayments.dayId,salePayments.accountId,salePayments.id],name:"money_movements_payment_fk"}),
+  check("money_movements_source",sql`(${t.accountOpeningId} is not null and ${t.salePaymentId} is null and ${t.dayId} is null) or (${t.accountOpeningId} is null and ${t.salePaymentId} is not null and ${t.dayId} is not null)`),
   foreignKey({columns:[t.businessId,t.storeId,t.accountId,t.accountOpeningId],
     foreignColumns:[accountOpenings.businessId,accountOpenings.storeId,accountOpenings.accountId,accountOpenings.id],name:"money_movements_opening_scope_fk"}),
   foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"money_movements_actor_fk"}),
@@ -153,3 +156,40 @@ export const dayOpenings = pgTable("day_openings",{
   foreignKey({columns:[t.businessId,t.storeId,t.accountId],foreignColumns:[accountStores.businessId,accountStores.storeId,accountStores.accountId],name:"day_openings_mapping_fk"}),
   foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"day_openings_actor_fk"}),
   check("day_openings_amount",sql`${t.amount} between 0 and 9000000000000`)]);
+
+export const documentCounters = pgTable("document_counters",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),businessDate:date("business_date").notNull(),
+  kind:text("kind").notNull(),nextNumber:bigint("next_number",{mode:"bigint"}).notNull(),
+},(t)=>[unique("document_counters_scope_uq").on(t.businessId,t.storeId,t.businessDate,t.kind),
+  foreignKey({columns:[t.businessId,t.storeId],foreignColumns:[stores.businessId,stores.id],name:"document_counters_store_fk"}),
+  check("document_counters_number",sql`${t.nextNumber} > 0`),check("document_counters_kind",sql`${t.kind} = 'POS'`)]);
+export const sales = pgTable("sales",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),dayId:uuid("day_id").notNull(),
+  kind:text("kind").notNull().default("POS"),reference:text("reference").notNull(),gross:bigint("gross",{mode:"bigint"}).notNull(),
+  discount:bigint("discount",{mode:"bigint"}).notNull(),net:bigint("net",{mode:"bigint"}).notNull(),dayRevision:bigint("day_revision",{mode:"bigint"}).notNull(),
+  occurredAt:timestamp("occurred_at",{withTimezone:true}).notNull(),createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t)=>[unique("sales_scope_uq").on(t.businessId,t.storeId,t.id),unique("sales_day_scope_uq").on(t.businessId,t.storeId,t.dayId,t.id),
+  unique("sales_reference_uq").on(t.businessId,t.storeId,t.reference),unique("sales_revision_uq").on(t.dayId,t.dayRevision),
+  foreignKey({columns:[t.businessId,t.storeId,t.dayId],foreignColumns:[businessDays.businessId,businessDays.storeId,businessDays.id],name:"sales_day_fk"}),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"sales_actor_fk"}),
+  check("sales_amounts",sql`${t.gross} > 0 and ${t.gross} <= 9000000000000 and ${t.discount} between 0 and ${t.gross} and ${t.net} = ${t.gross} - ${t.discount} and ${t.net} > 0`),
+  check("sales_kind",sql`${t.kind} = 'POS'`),check("sales_revision",sql`${t.dayRevision} > 0`),
+  index("sales_history_idx").on(t.businessId,t.storeId,t.occurredAt,t.id)]);
+export const saleItems = pgTable("sale_items",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),saleId:uuid("sale_id").notNull(),
+  position:integer("position").notNull(),productId:uuid("product_id").notNull(),nameSnapshot:text("name_snapshot").notNull(),
+  unitPrice:bigint("unit_price",{mode:"bigint"}).notNull(),productVersion:integer("product_version").notNull(),
+  quantity:integer("quantity").notNull(),lineTotal:bigint("line_total",{mode:"bigint"}).notNull(),
+},(t)=>[unique("sale_items_position_uq").on(t.saleId,t.position),unique("sale_items_product_uq").on(t.saleId,t.productId),
+  foreignKey({columns:[t.businessId,t.storeId,t.saleId],foreignColumns:[sales.businessId,sales.storeId,sales.id],name:"sale_items_sale_fk"}),
+  foreignKey({columns:[t.businessId,t.storeId,t.productId],foreignColumns:[products.businessId,products.storeId,products.id],name:"sale_items_product_fk"}),
+  check("sale_items_values",sql`${t.position} between 0 and 99 and ${t.quantity} between 1 and 999 and ${t.productVersion} > 0 and length(trim(${t.nameSnapshot})) between 1 and 120 and ${t.unitPrice} > 0 and ${t.lineTotal} = ${t.unitPrice}::numeric * ${t.quantity} and ${t.lineTotal} <= 9000000000000`)]);
+export const salePayments = pgTable("sale_payments",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),dayId:uuid("day_id").notNull(),saleId:uuid("sale_id").notNull(),
+  accountId:uuid("account_id").notNull(),channel:text("channel").notNull(),amount:bigint("amount",{mode:"bigint"}).notNull(),
+  tendered:bigint("tendered",{mode:"bigint"}),change:bigint("change",{mode:"bigint"}),
+},(t)=>[unique("sale_payments_scope_uq").on(t.businessId,t.storeId,t.dayId,t.accountId,t.id),unique("sale_payments_account_uq").on(t.saleId,t.accountId),
+  foreignKey({columns:[t.businessId,t.storeId,t.dayId,t.saleId],foreignColumns:[sales.businessId,sales.storeId,sales.dayId,sales.id],name:"sale_payments_sale_fk"}),
+  foreignKey({columns:[t.businessId,t.storeId,t.accountId],foreignColumns:[accountStores.businessId,accountStores.storeId,accountStores.accountId],name:"sale_payments_mapping_fk"}),
+  check("sale_payments_amount",sql`${t.amount} > 0 and ${t.amount} <= 9000000000000`),
+  check("sale_payments_channel",sql`(${t.channel} = 'CASH' and ${t.tendered} is not null and ${t.change} is not null and ${t.tendered} between ${t.amount} and 9000000000000 and ${t.change} = ${t.tendered} - ${t.amount}) or (${t.channel} = 'TRANSFER' and ${t.tendered} is null and ${t.change} is null)`)]);
