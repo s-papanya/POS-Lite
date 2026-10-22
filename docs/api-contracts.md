@@ -2,7 +2,9 @@
 
 Base `/api/v1`; JSON UTF-8; UUID identifiers; amount เป็น integer string หน่วยสตางค์
 F1 health และ F2 `/auth/*`, `/me`, GET `/stores`, GET `/stores/:storeId` implement แล้ว
-endpoints catalog/ธุรกรรม/จัดการผู้ใช้ด้านล่างยังเป็นสัญญาออกแบบ
+endpoints บัญชี/วันทำการ/ธุรกรรม/จัดการผู้ใช้ด้านล่างยังเป็นสัญญาออกแบบ
+S1a implement GET/POST `/stores/:storeId/products` และ PATCH `/stores/:storeId/products/:id` แล้ว
+ดู [catalog-validation.md](catalog-validation.md) สำหรับ version/idempotency/filter/cursor และข้อจำกัด
 Health public response `{data:{status:"ok",service:"family-store-manager-api"}}`, HTTP200,
 `X-Request-Id` UUID สร้างจาก server, `Cache-Control: no-store`; ไม่แปลว่า DB/auth/POS พร้อม
 JSON body limit16kb; เกินตอบ413 PAYLOAD_TOO_LARGE; malformed JSON ตอบ400 INVALID_REQUEST

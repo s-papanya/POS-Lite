@@ -167,8 +167,44 @@ for path, method, operation, request, response in [
         op["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref(request)}}}
     paths[path] = {method: op}
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.3.0",
-    "description": "F1 health and F2 auth/store endpoints implemented. Six financial paths remain design only. See api-contracts.md."},
+SCHEMAS["ProductPrice"] = {"type": "string", "pattern": r"^([1-8][0-9]{0,12}|9[0-9]{0,11}|9000000000000)$", "description": "Positive THB satang, maximum 9000000000000"}
+SCHEMAS["ProductName"] = {"type": "string", "minLength": 1, "maxLength": 120}
+SCHEMAS["Product"] = obj({"id": ref("Id"), "name": ref("ProductName"), "price": ref("ProductPrice"), "version": ref("Version"), "active": ref("Boolean")})
+SCHEMAS["ProductCreateRequest"] = obj({"name": ref("ProductName"), "price": ref("ProductPrice")})
+SCHEMAS["ProductUpdateRequest"] = obj({"name": ref("ProductName"), "price": ref("ProductPrice"), "active": ref("Boolean"),
+    "expectedVersion": {"type": "integer", "minimum": 1, "maximum": 2147483646}}, ("name", "price", "active"))
+SCHEMAS["ProductUpdateRequest"]["anyOf"] = [{"required": [field]} for field in ("name", "price", "active")]
+SCHEMAS["ProductResponse"] = obj({"data": ref("Product")})
+SCHEMAS["ProductListResponse"] = obj({"data": {"type": "array", "items": ref("Product")}, "page": obj({"nextCursor": {"type": ["string", "null"]}})})
+for path, method, operation, request, response in [
+    ("/stores/{storeId}/products", "get", "listProducts", None, "ProductListResponse"),
+    ("/stores/{storeId}/products", "post", "createProduct", "ProductCreateRequest", "ProductResponse"),
+    ("/stores/{storeId}/products/{productId}", "patch", "updateProduct", "ProductUpdateRequest", "ProductResponse"),
+]:
+    params = [{"name": "storeId", "in": "path", "required": True, "schema": ref("Id")}]
+    if "{productId}" in path:
+        params.append({"name": "productId", "in": "path", "required": True, "schema": ref("Id")})
+    if method == "get":
+        params += [{"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}},
+                   {"name": "active", "in": "query", "schema": {"type": "boolean", "default": True}, "description": "false requires OWNER"},
+                   {"name": "cursor", "in": "query", "schema": {"type": "string", "maxLength": 1024}}]
+    else:
+        params += [{"name": "X-CSRF-Token", "in": "header", "required": True, "schema": ref("Text")},
+                   {"name": "Origin", "in": "header", "required": True, "schema": {"type": "string", "format": "uri"}},
+                   {"name": "Idempotency-Key", "in": "header", "required": True, "schema": ref("Id")}]
+    responses = {"201" if method == "post" else "200": {"description": "Committed product / original replay" if request else "Name/id keyset page",
+        "content": {"application/json": {"schema": ref(response)}}}}
+    for code in ("400", "401", "403", "404", "409", "413", "500"):
+        responses[code] = {"description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {"application/json": {"schema": ref("Error")}}}
+    op = {"operationId": operation, "x-implemented": True, "parameters": params, "responses": responses,
+          "x-permissions": ["OWNER"] if request else ["OWNER", "MANAGER", "STAFF"]}
+    if request:
+        op["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref(request)}}}
+    paths.setdefault(path, {})[method] = op
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.4.0",
+    "description": "F1 health, F2 auth/store and S1a product endpoints implemented. Six financial paths remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

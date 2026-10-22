@@ -43,7 +43,7 @@ walk(doc)
 operation_ids = set()
 for path, methods in doc["paths"].items():
     for method, operation in methods.items():
-        assert method in {"get", "post"}
+        assert method in {"get", "post", "patch"}
         assert operation["operationId"] not in operation_ids
         operation_ids.add(operation["operationId"])
         params = operation["parameters"]
@@ -61,6 +61,12 @@ for path, methods in doc["paths"].items():
                 assert {"X-CSRF-Token", "Origin"} <= headers
             elif path == "/auth/csrf":
                 assert operation["security"] == []
+            continue
+        if path in {"/stores/{storeId}/products", "/stores/{storeId}/products/{productId}"}:
+            assert operation["x-implemented"] is True
+            if method != "get":
+                assert {"X-CSRF-Token", "Origin", "Idempotency-Key"} <= headers
+            assert ("201" if method == "post" else "200") in operation["responses"]
             continue
         assert "X-CSRF-Token" in headers
         if not path.endswith("/preview"):

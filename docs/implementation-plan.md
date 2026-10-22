@@ -4,6 +4,8 @@ Phase 0 เสร็จในระดับเอกสาร; P1–P5 ยื�
 ตอนส่งมอบ Phase 0 ครั้งแรกยังไม่มี Git/lockfile ปัจจุบันมี Git และ npm workspace starter เพิ่มแล้ว
 F1 implement แล้วและมีผลตรวจใน [foundation-validation.md](foundation-validation.md)
 F2 implement และผ่าน local validation แล้ว ดู [access-validation.md](access-validation.md)
+S1a API เมนู/ราคา/version/audit/idempotency implement แล้ว ดู [catalog-validation.md](catalog-validation.md)
+S1 ยังเหลือบัญชี, ledger opening และวันทำการ; ยังไม่เริ่ม S2/S3
 ติดตามสถานะและเกณฑ์ปิดช่วงงานใน [milestones.md](milestones.md)
 
 | ก้อน | งาน/ขอบเขต | เกณฑ์ตรวจรับ |

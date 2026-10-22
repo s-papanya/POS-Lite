@@ -9,19 +9,21 @@
 
 ## สถานะปัจจุบัน
 
-**F1 และ F2 authentication/store access implement แล้ว — ยังไม่เปิดบันทึกธุรกรรมร้านจริง**
+**F1/F2 และ S1a API เมนู implement แล้ว — ยังไม่เปิดบันทึกธุรกรรมร้านจริง**
 
 | ส่วน | สิ่งที่มีตอนนี้ |
 |---|---|
 | การออกแบบ | Requirements, กฎธุรกิจ, ERD, สิทธิ์, API contracts, UX flows และกรณีตรวจรับ A–P |
 | Frontend | หน้าเข้าสู่ระบบภาษาไทย เลือกร้านตามสิทธิ์ ออกจากระบบ และตรวจการเชื่อมต่อ |
 | Backend | Cookie sessions, CSRF/Origin, DB-backed rate limit, revoke/expiry และ store isolation |
-| ฐานข้อมูล | PostgreSQL + Drizzle migrations 8 ตาราง, runtime role แยกจาก admin, seed OWNER สองบัญชี/สองร้าน |
+| เมนู/ราคา | API เพิ่ม/แก้/ปิดเมนูสำหรับ OWNER พร้อม version, audit และ idempotency; ยังไม่มีหน้าจัดเมนู |
+| ฐานข้อมูล | PostgreSQL + Drizzle migrations 10 ตาราง, runtime role แยกจาก admin, seed OWNER สองบัญชี/สองร้าน |
 | Tooling | npm workspaces/lockfile เดียว, shared contracts, Vitest/Supertest, build/typecheck/lint/test |
 | ระบบใช้งานจริง | ยังไม่มี POS, ledger, ปิดวัน หรือรายงาน |
 
 P1–P5 ยืนยันแล้ว; F2 ผ่าน local validation แล้ว ยังไม่ได้ปิด milestone บน GitHub
 ดู [ผลตรวจ F1](docs/foundation-validation.md) และ [F2/วิธีใช้ฐานข้อมูล](docs/access-validation.md)
+งานล่าสุด: [S1a API เมนูและผลทดสอบ](docs/catalog-validation.md); S1 ยังเหลือบัญชี/ledger/วันทำการ
 ดูสถานะและเงื่อนไขปิดงานใน [milestones.md](docs/milestones.md)
 
 ## ขอบเขต MVP ที่จะพัฒนา

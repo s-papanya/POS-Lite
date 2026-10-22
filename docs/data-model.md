@@ -1,7 +1,9 @@
 # แบบข้อมูล PostgreSQL
 
 Identity/access 8 ตาราง implement ใน `apps/api/src/db/schema.ts` และ migration `0000_identity_access.sql` แล้ว
-ส่วน catalog/ธุรกรรมเงินด้านล่างยังเป็น specification ดูผล constraints จริงใน [access-validation.md](access-validation.md)
+ส่วนบัญชี/วันทำการ/ธุรกรรมเงินด้านล่างยังเป็น specification ดูผล constraints จริงใน [access-validation.md](access-validation.md)
+products/idempotency_records เพิ่มแล้วใน migration0001; [ผลตรวจ S1a](catalog-validation.md)
+ตารางการเงินและวันทำการยังไม่ implement
 ใช้ UUID PK ทุกตาราง เว้นระบุ; B=business_id UUID NOT NULL; S=store_id UUID NOT NULL;
 T=created_at timestamptz NOT NULL DEFAULT now(); U=created_by UUID NOT NULL FK users
 เงินทุก field BIGINT หน่วยสตางค์, ID API เป็น UUID string; timestamp UTC/offset, business_date DATE

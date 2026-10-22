@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Family Store Manager core design contract",
-    "version": "0.3.0",
-    "description": "F1 health and F2 auth/store endpoints implemented. Six financial paths remain design only. See api-contracts.md."
+    "version": "0.4.0",
+    "description": "F1 health, F2 auth/store and S1a product endpoints implemented. Six financial paths remain design only. See api-contracts.md."
   },
   "servers": [
     {
@@ -1806,6 +1806,414 @@
           }
         }
       }
+    },
+    "/stores/{storeId}/products": {
+      "get": {
+        "operationId": "listProducts",
+        "x-implemented": true,
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "false requires OWNER"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Name/id keyset page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-permissions": [
+          "OWNER",
+          "MANAGER",
+          "STAFF"
+        ]
+      },
+      "post": {
+        "operationId": "createProduct",
+        "x-implemented": true,
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Committed product / original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-permissions": [
+          "OWNER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stores/{storeId}/products/{productId}": {
+      "patch": {
+        "operationId": "updateProduct",
+        "x-implemented": true,
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed product / original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; PRICE_CHANGED includes details.product; IDEMPOTENCY_CONFLICT on changed payload/path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-permissions": [
+          "OWNER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductUpdateRequest"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2914,6 +3322,143 @@
         },
         "required": [
           "data"
+        ]
+      },
+      "ProductPrice": {
+        "type": "string",
+        "pattern": "^([1-8][0-9]{0,12}|9[0-9]{0,11}|9000000000000)$",
+        "description": "Positive THB satang, maximum 9000000000000"
+      },
+      "ProductName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "Product": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "$ref": "#/components/schemas/ProductName"
+          },
+          "price": {
+            "$ref": "#/components/schemas/ProductPrice"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "active": {
+            "$ref": "#/components/schemas/Boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "version",
+          "active"
+        ]
+      },
+      "ProductCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/ProductName"
+          },
+          "price": {
+            "$ref": "#/components/schemas/ProductPrice"
+          }
+        },
+        "required": [
+          "name",
+          "price"
+        ]
+      },
+      "ProductUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/ProductName"
+          },
+          "price": {
+            "$ref": "#/components/schemas/ProductPrice"
+          },
+          "active": {
+            "$ref": "#/components/schemas/Boolean"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483646
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "name"
+            ]
+          },
+          {
+            "required": [
+              "price"
+            ]
+          },
+          {
+            "required": [
+              "active"
+            ]
+          }
+        ]
+      },
+      "ProductResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Product"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "ProductListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Product"
+            }
+          },
+          "page": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "nextCursor"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "page"
         ]
       }
     }
