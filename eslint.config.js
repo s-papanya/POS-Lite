@@ -6,7 +6,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['**/dist/**', '**/node_modules/**']),
   {
-    files: ['apps/api/**/*.ts', 'packages/*/src/**/*.ts', 'vitest.config.ts'],
+    files: ['apps/api/**/*.ts', 'packages/*/src/**/*.ts', 'vitest*.config.ts'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
     languageOptions: { globals: globals.node },
   },

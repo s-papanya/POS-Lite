@@ -4,8 +4,10 @@ import type { HealthResponse } from "@pos-lite/shared";
 import type { AppConfig } from "./config.js";
 import { errorHandler, notFoundHandler } from "./errors.js";
 import { createHttpLogger } from "./logger.js";
+import { authRouter } from "./modules/auth/routes.js";
+import type { AuthService } from "./modules/auth/service.js";
 
-export function createApp({ logger, config }: { logger: Logger; config: AppConfig }) {
+export function createApp({ logger, config, auth }: { logger: Logger; config: AppConfig; auth?: AuthService }) {
   const app = express();
   app.set("env", config.nodeEnv);
   app.set("trust proxy", false);
@@ -22,6 +24,7 @@ export function createApp({ logger, config }: { logger: Logger; config: AppConfi
     const body: HealthResponse = { data: { status: "ok", service: "family-store-manager-api" } };
     res.json(body);
   });
+  if (auth) app.use("/api/v1", authRouter(auth));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
