@@ -10,15 +10,37 @@
   "type": "module",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "devDependencies": {
-    "concurrently": "^10.0.6"
+    "@eslint/js": "10.0.1",
+    "@types/supertest": "7.2.1",
+    "concurrently": "10.0.6",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "supertest": "7.3.1",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
   },
   "scripts": {
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
-    "dev:api": "npm run dev -w apps/api",
-    "dev:web": "npm run dev -w apps/web",
-    "build": "npm run build --workspaces --if-present"
-  }
+    "dev": "npm run build:packages && concurrently \"npm run dev -w api\" \"npm run dev -w web\"",
+    "dev:api": "npm run build:packages && npm run dev -w api",
+    "dev:web": "npm run build:packages && npm run dev -w web",
+    "build:packages": "npm run build -w @pos-lite/shared && npm run build -w @pos-lite/validation",
+    "build": "npm run build:packages && npm run build -w api && npm run build -w web",
+    "pretypecheck": "npm run build:packages",
+    "typecheck": "npm run typecheck -w api && npm run typecheck -w web",
+    "lint": "eslint apps/api/src apps/api/test packages/shared/src packages/validation/src vitest.config.ts && npm run lint -w web",
+    "pretest": "npm run build:packages",
+    "test": "vitest run",
+    "db:up": "docker compose --env-file .env -f infra/compose.yaml up -d --wait",
+    "db:down": "docker compose --env-file .env -f infra/compose.yaml down",
+    "db:status": "docker compose --env-file .env -f infra/compose.yaml ps"
+  },
+  "engines": {
+    "node": ">=24.0.0 <25",
+    "npm": ">=12.0.0 <13"
+  },
+  "packageManager": "npm@12.2.0"
 }
