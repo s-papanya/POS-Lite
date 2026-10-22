@@ -99,7 +99,10 @@ client timeout เก็บ key/payload/user/store; retry ชุดเดิม�
 transaction ใช้ READ COMMITTED + explicit row locks ลำดับเดียวกันทุก service:
 claim idempotency row → business_days เรียง store/date → sales/expenses ต้นทางเรียง ID
 → financial_accounts เรียง ID → document counter → เขียน source/ledger/audit/response → COMMIT
-INSERT day ON CONFLICT DO NOTHING แล้ว SELECT FOR UPDATE; advisory lock ไม่จำเป็น
+การสร้างวันใช้ store configuration advisory transaction lock ก่อน SELECT/INSERT day เพื่อ serialize กรณีที่ยังไม่มีแถววัน
+การสร้าง/เปิดยอดตั้งต้น/เปลี่ยน active บัญชีใช้ gate เดียวกัน เรียง store IDs ก่อน lock account IDs;
+ห้ามเปลี่ยนชุดบัญชีระหว่างวัน OPEN (เปลี่ยนชื่อได้) และไม่กระทบลำดับ day/account locks ของธุรกรรมเงิน
+S1c ใช้ gate + unique date/partial unique OPEN; การเปิดวันถัดไปปฏิเสธจนมีหลักฐานปิดและ settlement ใน D4
 same key concurrent ให้ UNIQUE insert รอ commit แล้วอ่าน response ด้วย statement ถัดไป
 ถ้า original rollback คู่แข่งจึง claim ต่อได้; ไม่คง PENDING หลัง crash เพราะ row อยู่ transaction เดียว
 ทุก mutation ของวันล็อกวันก่อนตรวจ OPEN และ increment revision รวม refund และ payment

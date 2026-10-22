@@ -6,7 +6,8 @@ F1 implement แล้วและมีผลตรวจใน [foundation-val
 F2 implement และผ่าน local validation แล้ว ดู [access-validation.md](access-validation.md)
 S1a API เมนู/ราคา/version/audit/idempotency implement แล้ว ดู [catalog-validation.md](catalog-validation.md)
 S1b บัญชี/ledger opening implement แล้ว ดู [accounts-validation.md](accounts-validation.md)
-S1 ยังเหลือวันทำการ/day opening snapshots; ยังไม่เริ่ม S2/S3
+S1c เปิดวันแรก/day opening snapshots implement แล้ว ดู [business-days-validation.md](business-days-validation.md)
+วันถัดไปยัง fail closed จนมีหลักฐานปิดวัน/settlement ใน D4; งานถัดไป S2 ธุรกรรม POS แล้ว S3 หน้าจอ Android
 ติดตามสถานะและเกณฑ์ปิดช่วงงานใน [milestones.md](milestones.md)
 
 | ก้อน | งาน/ขอบเขต | เกณฑ์ตรวจรับ |

@@ -1,8 +1,11 @@
 # REST API contracts
 
 Base `/api/v1`; JSON UTF-8; UUID identifiers; amount เป็น integer string หน่วยสตางค์
+day revision/expectedRevision เป็น nonnegative integer string รองรับ PostgreSQL BIGINT โดยไม่เสีย precision; product version ยังเป็น integer
 F1 health และ F2 `/auth/*`, `/me`, GET `/stores`, GET `/stores/:storeId` implement แล้ว
-endpoints วันทำการ/ธุรกรรม/จัดการผู้ใช้ด้านล่างยังเป็นสัญญาออกแบบ
+endpoints ธุรกรรม/ปิดวัน/จัดการผู้ใช้ด้านล่างยังเป็นสัญญาออกแบบ
+S1c implement POST /stores/:storeId/business-days และ GET /stores/:storeId/business-days/:date แล้ว
+ดู [business-days-validation.md](business-days-validation.md): เปิดวันแรกเท่านั้น; ยังไม่มี D4 settlement gate สำหรับวันถัดไป
 S1b implement POST /accounts, PATCH /accounts/:accountId, POST /accounts/:accountId/opening และ GET /stores/:storeId/accounts แล้ว
 ดู [accounts-validation.md](accounts-validation.md) สำหรับ ledger invariants/idempotency และขอบเขตที่ยังไม่ทำ
 S1a implement GET/POST `/stores/:storeId/products` และ PATCH `/stores/:storeId/products/:id` แล้ว
@@ -89,8 +92,8 @@ verify hash, rotate current session/revoke sessions อื่น tx; ไม่�
 
 | Method/path | สิทธิ์ | Request → Response | ผล/transaction และวันปิด |
 |---|---|---|---|
-| GET /stores/:storeId/business-days/:date | O/M/S | — → id,date,state,revision | S ไม่ได้รับเงินสด closing details |
-| POST /stores/:storeId/business-days | O/M | businessDate → day,openingSnapshots | lock/create day; require previous settled; OPEN เท่านั้น auto-create sale ใช้ service เดียวกัน |
+| GET /stores/:storeId/business-days/:date | O/M/S | — → data:{id,businessDate,state,revision,openingSnapshots?} | implement; STAFF ไม่ได้รับ openingSnapshots; revision เป็น string |
+| POST /stores/:storeId/business-days | O/M | {businessDate} → data:{id,businessDate,state,revision,openingSnapshots} | implement; วันนี้ Bangkok เท่านั้น; ใหม่201/OPENเดิม200/replaystatusเดิม; CLOSED409; วันก่อนมีอยู่ปฏิเสธจน D4; auto-create sale รอ S2 |
 | POST /stores/:storeId/sales | O/M/S | ตัวอย่างด้านล่าง → sale/ref/payments/dayRevision | คำนวณราคาเอง; source+items+payments+ledger; CLOSED ปฏิเสธ |
 | GET /stores/:storeId/sales | O/M/S | from,to,cursor → sales | รวม kind,refund/reversal status |
 | GET /stores/:storeId/sales/:saleId | O/M/S | — → snapshots,payments,refund refs | cross-store lookup 404 |
