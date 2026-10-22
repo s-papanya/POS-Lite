@@ -9,19 +9,19 @@
 
 ## สถานะปัจจุบัน
 
-**F1 Foundation implement แล้ว — ยังไม่พร้อมใช้บันทึกธุรกรรมร้านจริง**
+**F1 และ F2 authentication/store access implement แล้ว — ยังไม่เปิดบันทึกธุรกรรมร้านจริง**
 
 | ส่วน | สิ่งที่มีตอนนี้ |
 |---|---|
 | การออกแบบ | Requirements, กฎธุรกิจ, ERD, สิทธิ์, API contracts, UX flows และกรณีตรวจรับ A–P |
-| Frontend | หน้าเริ่มต้นภาษาไทย ตรวจการเชื่อมต่อ API จริง พร้อม retry/error/offline states |
-| Backend | Express, Zod config validation, Pino request logs, request IDs และ HTTP error envelope |
-| ฐานข้อมูล | Docker Compose PostgreSQL local พร้อม healthcheck; ยังไม่มี business migrations หรือ seed |
+| Frontend | หน้าเข้าสู่ระบบภาษาไทย เลือกร้านตามสิทธิ์ ออกจากระบบ และตรวจการเชื่อมต่อ |
+| Backend | Cookie sessions, CSRF/Origin, DB-backed rate limit, revoke/expiry และ store isolation |
+| ฐานข้อมูล | PostgreSQL + Drizzle migrations 8 ตาราง, runtime role แยกจาก admin, seed OWNER สองบัญชี/สองร้าน |
 | Tooling | npm workspaces/lockfile เดียว, shared contracts, Vitest/Supertest, build/typecheck/lint/test |
-| ระบบใช้งานจริง | ยังไม่มี authentication, POS, ledger, ปิดวัน หรือรายงาน |
+| ระบบใช้งานจริง | ยังไม่มี POS, ledger, ปิดวัน หรือรายงาน |
 
-M0 ยังรอยืนยันนโยบาย P4/P5 ส่วน M1 ยังเปิดเพราะเหลือ F2 authentication/store access
-ดู [ผลตรวจ F1 และข้อจำกัด](docs/foundation-validation.md)
+M0 ยังรอยืนยันนโยบาย P4/P5; F2 ผ่าน local validation แล้ว ยังไม่ได้ปิด milestone บน GitHub
+ดู [ผลตรวจ F1](docs/foundation-validation.md) และ [F2/วิธีใช้ฐานข้อมูล](docs/access-validation.md)
 ดูสถานะและเงื่อนไขปิดงานใน [milestones.md](docs/milestones.md)
 
 ## ขอบเขต MVP ที่จะพัฒนา
@@ -40,15 +40,17 @@ MVP ใช้งานออนไลน์เป็นหลัก ส่วน
 
 ใช้ Node.js 24.x และ npm 12.x; เครื่องที่ตรวจใช้ `24.20.0` / `12.2.0`
 Python 3 ใช้เฉพาะตรวจเอกสาร ไม่จำเป็นสำหรับการเปิด web/API starter
-ใช้ Docker Desktop หากต้องการเปิด PostgreSQL local; API health ยังไม่เชื่อมฐานข้อมูลใน F1
+ใช้ Docker Desktop สำหรับ PostgreSQL local; authentication ต้องเชื่อมฐานข้อมูลจริง
 
 รันจากโฟลเดอร์หลักของ repository:
 
 ```powershell
 npm ci
 Copy-Item .env.example .env
-# เปลี่ยน POSTGRES_PASSWORD ใน .env เป็นรหัสผ่าน local ของคุณก่อนเปิดฐานข้อมูล
+# ตั้งรหัสผ่าน/URLs/SESSION_SECRET/seed credentials ตาม .env.example ก่อน
 npm run db:up
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
@@ -56,6 +58,8 @@ npm run dev
 หากมี .env แล้วให้รักษาค่าเดิม ไม่คัดลอกทับ และไม่ commit รหัสผ่าน
 
 เปิดหน้าเว็บตาม URL ที่ Vite แสดงใน terminal โดยปกติเป็น [localhost:5173](http://localhost:5173)
+ตั้ง `APP_ORIGIN` ให้ตรง origin นี้แบบไม่มี slash ท้าย; หาก Vite เปลี่ยนพอร์ตให้ปรับค่าแล้ว restart API
+เข้าสู่ระบบด้วย `SEED_OWNER_*` หรือ `SEED_MOTHER_*` จาก `.env`; ไม่มีรหัสผ่านเริ่มต้นฝังในโค้ด
 ตรวจ API ได้ที่ [127.0.0.1:3000/api/v1/health](http://127.0.0.1:3000/api/v1/health):
 
 ```json
@@ -78,16 +82,20 @@ health หมายถึง process ทำงาน ไม่ได้ยืน
 | `npm run typecheck` | ตรวจ TypeScript ของ API/tests และเว็บ โดย build shared packages ก่อน |
 | `npm run lint` | ตรวจ API/tests/shared packages และเว็บ |
 | `npm test` | รัน Vitest/Supertest ของ Foundation |
+| `npm run test:db` | Vitest integration บน PostgreSQL ชั่วคราวที่สร้างและตรวจ ownership เอง |
 | `npm run build` | build shared/validation → API → เว็บ แบบไม่ข้าม workspace |
 | `npm run start -w api` | รัน API จาก dist หลัง build |
 | `npm run db:up` | เปิด PostgreSQL local และรอ healthcheck |
 | `npm run db:status` | ดูสถานะ container |
+| `npm run db:generate` | สร้าง Drizzle migration จาก schema; review SQL ก่อน apply |
+| `npm run db:migrate` | Apply migrations/checksums และ runtime grants เฉพาะ local dev |
+| `npm run db:seed` | สร้าง OWNER สองบัญชีและสองร้าน; รันซ้ำไม่ reset รหัสผ่าน |
 | `npm run db:down` | หยุด container โดยเก็บ named volume ไว้ |
 
-API tests ปัจจุบันตรวจ config และ HTTP boundary ยังไม่ใช่ acceptance A–P ของธุรกรรมจริง
+API tests ตรวจ config/HTTP และ auth/store isolation บน PostgreSQL จริง ยังไม่ใช่ acceptance A–P ด้านธุรกรรมเงิน
 หากแก้ shared/validation ระหว่าง dev ให้ restart `npm run dev` เพื่อ build packages ใหม่
-คำสั่ง migration/seed และ CI/deployment pipeline จะเพิ่มเมื่อทำ F2/งานที่เกี่ยวข้อง ไม่ใส่ noop แทน
-PostgreSQL local ฟังที่ `127.0.0.1:5433`, DB `pos_lite_dev`, user `pos_lite_local`
+CI/deployment pipeline ยังไม่มี; คำสั่ง DB ปัจจุบันปฏิเสธ target ที่ไม่ใช่ local dev
+PostgreSQL local ฟังที่ `127.0.0.1:5433`, DB `pos_lite_dev`; migration ใช้ `pos_lite_local`, API ใช้ `pos_lite_app`
 อย่าใช้ `down -v` หากต้องการเก็บข้อมูล; เปลี่ยน password ใน .env ไม่เปลี่ยนรหัสของ volume ที่ initialize แล้ว
 
 ## โครงสร้าง repository

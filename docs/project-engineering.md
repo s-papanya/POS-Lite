@@ -1,6 +1,6 @@
 # Engineering conventions สำหรับ project skills
 
-ข้อตกลงสำหรับพัฒนาต่อและสถานะล่าสุดหลัง F1; M1 ยังไม่ครบเพราะ F2 ยังไม่ได้ทำ
+ข้อตกลงสำหรับพัฒนาต่อและสถานะล่าสุดหลัง F2; ผลตรวจ local อยู่ใน [access-validation.md](access-validation.md)
 skills อยู่ใน `.agents/skills` ใช้เฉพาะประเภทงานที่เกี่ยวข้อง ไม่โหลดทุก skill ทุกครั้ง
 ตรวจ package/config และผลรันใหม่ก่อนอ้างสถานะ หากโค้ดต่างจากกฎธุรกิจที่ตกลงให้รายงาน gap ไม่แก้กฎตาม bug
 
@@ -8,12 +8,12 @@ skills อยู่ใน `.agents/skills` ใช้เฉพาะประเ�
 
 | เรื่อง | มีจริง | แผนที่ยังไม่ implement |
 |---|---|---|
-| Runtime | React/Vite/TypeScript, Express, Zod, Pino, shared/validation packages; PostgreSQL local Compose | DB driver/Drizzle, business migrations, session auth |
-| Tests | Vitest5/Supertest; config และ HTTP/error/logging tests | PostgreSQL integration สำหรับ business transactions/constraints/concurrency |
+| Runtime | React/Vite/TypeScript, Express, Zod, Pino, pg/Drizzle, Argon2id; local migrations/seed และ cookie auth | ธุรกรรมเงิน/catalog/day/ledger |
+| Tests | Vitest5/Supertest; config/HTTP/password และ PostgreSQL auth/constraints/rollback integration | financial transactions/concurrency A–P |
 | CI/CD | ยังไม่มี workflows หรือ deployment manifests | CI, staging/production pipeline, backup/restore |
 | Lint | Root ESLint สำหรับ API/tests/packages; เว็บ Hooks/Fast Refresh; root build/typecheck/lint/test | CI quality gates |
 | Style | API double quotes/semicolons; เว็บ single quotes/no semicolons เป็นหลัก | formatter/import sorting ที่ enforce ร่วมกัน |
-| UI | Thai shell/CSS navy tokens, health/retry/error/offline states | Tailwind/product transaction components |
+| UI | Thai shell/CSS navy tokens, health/login/logout และเลือกร้านตามสิทธิ์ | password-change UI, Tailwind/transaction components |
 | Git | GitHub origin, main, Conventional Commit ตัวอย่างใน history | protection/required checks/hooks ยังไม่ถือว่าตั้งแล้ว |
 
 คำสั่งที่มีตอนนี้จาก root (ตรวจ scripts อีกครั้งก่อนใช้):
@@ -23,6 +23,7 @@ npm ci
 npm run typecheck
 npm run lint
 npm test
+npm run test:db
 npm run build
 ```
 

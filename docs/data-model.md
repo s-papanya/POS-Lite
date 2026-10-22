@@ -1,6 +1,7 @@
 # แบบข้อมูล PostgreSQL
 
-นี่คือ schema specification ยังไม่ใช่ migration ที่รันแล้ว SQL constraints ต้องพิสูจน์ใน Phase 1–3
+Identity/access 8 ตาราง implement ใน `apps/api/src/db/schema.ts` และ migration `0000_identity_access.sql` แล้ว
+ส่วน catalog/ธุรกรรมเงินด้านล่างยังเป็น specification ดูผล constraints จริงใน [access-validation.md](access-validation.md)
 ใช้ UUID PK ทุกตาราง เว้นระบุ; B=business_id UUID NOT NULL; S=store_id UUID NOT NULL;
 T=created_at timestamptz NOT NULL DEFAULT now(); U=created_by UUID NOT NULL FK users
 เงินทุก field BIGINT หน่วยสตางค์, ID API เป็น UUID string; timestamp UTC/offset, business_date DATE
@@ -18,11 +19,11 @@ audit actor FK RESTRICT เพื่อรักษาประวัติ ไ�
 |---|---|---|
 | businesses / กิจการ | id, name text, timezone text, currency text, T,U | timezone='Asia/Bangkok', currency='THB'; bootstrap U ต้องอ้าง user ที่สร้างก่อน |
 | users / ผู้ใช้ | id, username text, password_hash text, active boolean, T | unique lower(username); ไม่เก็บ plaintext; ผู้สร้างแรกไม่มี U |
-| business_memberships / owner | id,B,user_id,role,active,T,U | FK user; unique(B,user_id); role='OWNER' |
+| business_memberships / business identity | id,B,user_id,role,active,T,U | FK user; unique(B,user_id); role IN OWNER/MEMBER; MEMBER ไม่มี business permission เป็นฐาน FK สำหรับ MANAGER/STAFF |
 | stores / ร้าน | id,B,name text,code text,active boolean,T,U | unique(B,code); FK B |
 | store_memberships / สิทธิ์ร้าน | id,B,S,user_id,role,active,T,U | role IN MANAGER/STAFF; unique(B,S,user_id); index(user_id,active) |
-| sessions / session server | id,user_id?,token_hash bytea,csrf_hash bytea,created_at,expires_at,last_seen_at,absolute_expires_at,revoked_at? | unique token_hash; index(expires_at), (user_id); user nullable เฉพาะ anonymous pre-login |
-| login_attempts / จำกัด login | id,bucket_key text,window_start timestamptz,attempts int,expires_at | unique(bucket_key,window_start); attempts>=0; index expires_at; ไม่เก็บชื่อ/รหัสผ่านดิบ |
+| sessions / session server | id,B?,user_id?,token_hash bytea,csrf_hash bytea,created_at,expires_at,last_seen_at,absolute_expires_at,revoked_at? | unique token_hash; index(expires_at), (user_id); composite FK(B,user_id)→business_memberships; B/user nullable พร้อมกันเฉพาะ anonymous; hashes 32 bytes; expiry≤absolute |
+| login_attempts / จำกัด login | id,bucket_key text,window_start timestamptz,attempts int,expires_at | unique(bucket_key,window_start); attempts>0; index expires_at; HMAC bucket ไม่เก็บชื่อ/IP/รหัสผ่านดิบ |
 | products / เมนูต่อร้าน | id,B,S,name text,price bigint,version int,active boolean,T,U | price>0, version>0; index(B,S,active,name); current price update เพิ่ม version |
 | financial_accounts / บัญชีจริง | id,B,name text,type text,active boolean,T,U | type CASH/BANK; unique(B,name); index(B,active) |
 | account_stores / อนุญาตบัญชี | id,B,S,account_id,T,U | composite FK account; unique(B,S,account_id); index(B,account_id) |

@@ -1,4 +1,4 @@
-"""Generate Phase 0 core contract; no application dependencies required."""
+"""Generate core design contract plus implemented F1/F2 endpoints; stdlib only."""
 import json
 from pathlib import Path
 
@@ -125,8 +125,50 @@ for suffix, operation, request, response, mutation, roles in OPERATIONS:
         "x-permissions": roles, "x-transaction": "Atomic source/ledger/audit/idempotency with row locks" if mutation else "Consistent read snapshot",
         "parameters": params, "requestBody": {"required": True, "content": {"application/json": {"schema": ref(request)}}}, "responses": responses}}
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.2.0",
-    "description": "F1 health endpoint implemented. Six financial paths remain design contracts only. See api-contracts.md."},
+SCHEMAS["CsrfResponse"] = obj({"data": obj({"csrfToken": {"type": "string", "pattern": "^[a-f0-9]{64}$"}})})
+SCHEMAS["LoginRequest"] = obj({"username": {"type": "string", "minLength": 3, "maxLength": 64},
+    "password": {"type": "string", "minLength": 1, "maxLength": 128}, "businessId": ref("Id")}, ("businessId",))
+SCHEMAS["PasswordRequest"] = obj({"currentPassword": {"type": "string", "minLength": 1, "maxLength": 128},
+    "newPassword": {"type": "string", "minLength": 12, "maxLength": 128}})
+SCHEMAS["LogoutResponse"] = obj({"data": obj({"loggedOut": {"type": "boolean", "const": True}})})
+SCHEMAS["AccessibleStore"] = obj({"id": ref("Id"), "name": ref("Text"), "code": ref("Text"),
+    "role": {"type": "string", "enum": ["OWNER", "MANAGER", "STAFF"]}})
+SCHEMAS["StoreResponse"] = obj({"data": ref("AccessibleStore")})
+SCHEMAS["StoreListResponse"] = obj({"data": {"type": "array", "items": ref("AccessibleStore")},
+    "page": obj({"nextCursor": {"type": "null"}})})
+SCHEMAS["MeResponse"] = obj({"data": obj({"user": obj({"id": ref("Id"), "username": ref("Text")}),
+    "business": obj({"id": ref("Id"), "name": ref("Text")}),
+    "businessRole": {"type": ["string", "null"], "enum": ["OWNER", None]},
+    "stores": {"type": "array", "items": ref("AccessibleStore")}})})
+for path, method, operation, request, response in [
+    ("/auth/csrf", "get", "getCsrf", None, "CsrfResponse"),
+    ("/auth/login", "post", "login", "LoginRequest", "CsrfResponse"),
+    ("/auth/logout", "post", "logout", None, "LogoutResponse"),
+    ("/auth/password", "post", "changePassword", "PasswordRequest", "CsrfResponse"),
+    ("/me", "get", "getMe", None, "MeResponse"),
+    ("/stores", "get", "listAccessibleStores", None, "StoreListResponse"),
+    ("/stores/{storeId}", "get", "getAccessibleStore", None, "StoreResponse"),
+]:
+    params = []
+    if "{storeId}" in path:
+        params.append({"name": "storeId", "in": "path", "required": True, "schema": ref("Id")})
+    if method == "post":
+        params += [{"name": "X-CSRF-Token", "in": "header", "required": True, "schema": ref("Text")},
+                   {"name": "Origin", "in": "header", "required": True, "schema": {"type": "string", "format": "uri"}}]
+    responses = {"200": {"description": "Success; no-store; session cookies HttpOnly, SameSite=Lax, Secure in production",
+        "content": {"application/json": {"schema": ref(response)}}}}
+    for code in ("400", "401", "403", "404", "409", "413", "429", "500"):
+        responses[code] = {"description": "Standard error; RATE_LIMITED includes Retry-After seconds",
+            "content": {"application/json": {"schema": ref("Error")}}}
+    op = {"operationId": operation, "x-implemented": True, "parameters": params, "responses": responses}
+    if path == "/auth/csrf":
+        op["security"] = []
+    if request:
+        op["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref(request)}}}
+    paths[path] = {method: op}
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.3.0",
+    "description": "F1 health and F2 auth/store endpoints implemented. Six financial paths remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

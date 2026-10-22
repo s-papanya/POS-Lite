@@ -10,7 +10,7 @@
 | Milestone | สถานะเริ่มต้น | งานย่อย | ขึ้นกับ | เกณฑ์ปิด |
 |---|---|---|---|---|
 | M0 — Product & Domain Design | เอกสารส่งมอบแล้ว; รอยืนยัน P4/P5 | Requirement, rules, ERD, permissions, contracts, UX, acceptance | — | เจ้าของยืนยัน P4/P5; เอกสารไม่ขัดกัน; แผนครบ A–P; บันทึกข้อจำกัด OpenAPI core subset |
-| M1 — Foundation & Secure Access | F1 implement/ตรวจแล้ว; รอ F2 | F1, F2 | M0 เฉพาะข้อออกแบบที่เกี่ยวข้อง; F1 เริ่มได้ก่อน P4/P5 | monorepo/scripts/config/Compose พร้อม; migrations DB จริง; login/CSRF/session/rate limit/store isolation ผ่าน; ไม่มี secret ใน log |
+| M1 — Foundation & Secure Access | F1/F2 implement และผ่าน local validation; GitHub ยัง Open | F1, F2 | M0 เฉพาะข้อออกแบบที่เกี่ยวข้อง; F1 เริ่มได้ก่อน P4/P5 | monorepo/scripts/config/Compose พร้อม; migrations DB จริง; login/CSRF/session/rate limit/store isolation ผ่าน; ไม่มี secret ใน log |
 | M2 — Catalog, Accounts & POS | ยังไม่เริ่ม business features | S1, S2, S3 | M1 และ P4/P5 ยืนยัน | ขาย/แบ่งชำระ/เงินทอน/ส่วนลด/ราคา snapshot/history; idempotency/rollback; A,E,M,N,P ผ่านและ Android flow ใช้ได้ |
 | M3 — Supplemental Sales & Reconciliation | ยังไม่เริ่ม | D1 | M2 | B,C,D,F,G ผ่าน PostgreSQL จริง; signed net target; preview revision/recompute; สองอุปกรณ์ไม่เพิ่มยอดซ้ำ |
 | M4 — Expenses & Money Operations | ยังไม่เริ่ม | D2 | M2; ทำขนาน M3 ได้เมื่อมีผู้รับผิดชอบ | H,I,J ผ่าน; unpaid ไม่ลดเงิน; owner flows แยกจากยอดขาย; transfer/fee atomic; shared bank ไม่รวมซ้ำ |

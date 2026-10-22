@@ -1,7 +1,8 @@
 # REST API contracts
 
 Base `/api/v1`; JSON UTF-8; UUID identifiers; amount เป็น integer string หน่วยสตางค์
-F1 implement เฉพาะ `GET /health` และ HTTP error boundary; endpoints ธุรกิจด้านล่างยังเป็นสัญญาออกแบบ
+F1 health และ F2 `/auth/*`, `/me`, GET `/stores`, GET `/stores/:storeId` implement แล้ว
+endpoints catalog/ธุรกรรม/จัดการผู้ใช้ด้านล่างยังเป็นสัญญาออกแบบ
 Health public response `{data:{status:"ok",service:"family-store-manager-api"}}`, HTTP200,
 `X-Request-Id` UUID สร้างจาก server, `Cache-Control: no-store`; ไม่แปลว่า DB/auth/POS พร้อม
 JSON body limit16kb; เกินตอบ413 PAYLOAD_TOO_LARGE; malformed JSON ตอบ400 INVALID_REQUEST
@@ -12,6 +13,7 @@ error envelope ใช้ shared schema; request logs ไม่เก็บ body/
 ## ข้อกำหนดร่วม
 
 cookie session + CSRF บน mutation; strict input; ไม่รับ business_id จาก body ใช้ authenticated context
+ข้อยกเว้น auth/login รับ businessId เพื่อเลือกได้เฉพาะ active membership ของผู้ใช้ที่ตรวจรหัสผ่านแล้ว
 storeId ต้องอยู่ business ที่ active; nested IDs ต้องอยู่ร้านเดียวกับ path; query filter ไม่ขยายสิทธิ์
 ทุก mutation ใช้ `Idempotency-Key: UUID` ยกเว้น auth ที่ rotate/revoke session
 mutation เงินรับ `occurredAt` ISO timestamp; server ตรวจ businessDate/day OPEN;
@@ -19,11 +21,12 @@ preview read-only ไม่ต้อง key ใช้ POST เพื่อส่
 ทุก tx เงินมี source + children + money_movements + audit + idempotency response atomic
 response success `{data: ...}`; creation 201; no-change/replay คืน original status
 list `{data:[...],page:{nextCursor:null|string}}`; limit 1–100 default 30 keyset (occurred_at,id)
+GET /stores ใน F2 คืนร้านที่เข้าถึงได้ทั้งหมดและ nextCursor=null; ยังไม่ใช่ transaction pagination
 ทุก query ช่วงรายงานรับ from/to เป็น Bangkok dates inclusive จำกัด 366 วัน
 
 error `{error:{code,message,requestId,details?}}`; message ภาษาไทยปลอดภัย ไม่มี stack/SQL/secrets
-400 INVALID_REQUEST; 401 SESSION_EXPIRED; 403 FORBIDDEN/CSRF_INVALID;
-404 RESOURCE_NOT_FOUND; 409 PRICE_CHANGED/DAY_CLOSED/STALE_PREVIEW/IDEMPOTENCY_CONFLICT/
+400 INVALID_REQUEST; 401 AUTH_REQUIRED/INVALID_CREDENTIALS/SESSION_EXPIRED; 403 FORBIDDEN/CSRF_INVALID/ORIGIN_INVALID;
+404 RESOURCE_NOT_FOUND; 409 BUSINESS_SELECTION_REQUIRED/PRICE_CHANGED/DAY_CLOSED/STALE_PREVIEW/IDEMPOTENCY_CONFLICT/
 RECONCILIATION_REQUIRES_REVIEW/ALREADY_REFUNDED/ALREADY_REVERSED/PREVIOUS_DAY_UNSETTLED;
 422 PAYMENT_MISMATCH/INSUFFICIENT_FUNDS/OVER_REFUND/ACCOUNT_NOT_ALLOWED;
 429 RATE_LIMITED (Retry-After); 503 TEMPORARILY_UNAVAILABLE; 500 INTERNAL_ERROR
@@ -54,10 +57,12 @@ O=OWNER ใน business; M=MANAGER เฉพาะร้านที่มี me
 | Method/path | สิทธิ์ | Request → Response | Validation/transaction |
 |---|---|---|---|
 | GET /auth/csrf | anonymous/session | — → csrfToken | anonymous session อายุ 15 นาที; Cache-Control:no-store |
-| POST /auth/login | anonymous + CSRF | username,password → user, memberships | generic invalid credentials, rate limit; rotate session tx |
-| POST /auth/logout | session + CSRF | {} → loggedOut:true | revoke session tx; repeated logout 200 ได้ |
-| GET /me | session | — → user,business,role,stores | 401 เมื่อหมดอายุ |
+| POST /auth/login | anonymous + CSRF | username,password,businessId? → csrfToken (ใช้ GET /me อ่าน identity) | generic invalid credentials, rate limit; rotate session tx |
+| POST /auth/logout | session + CSRF | {} → loggedOut:true | revoke session tx; session ที่ revoked/หมดอายุแล้วตอบ403 CSRF_INVALID; GET /me ตอบ401 |
+| GET /me | session | — → user,business,businessRole,stores | 401 เมื่อหมดอายุ |
 | GET /stores | session | — → accessible stores | ไม่รับ arbitrary business |
+| GET /stores/:storeId | session | — → accessible store | ร้านนอก scope ตอบ404 |
+| POST /auth/password | session + CSRF | currentPassword,newPassword → csrfToken | new12–128 characters; hashนอกtx; revokeทุกdeviceและออกsessionใหม่ในtxเดียวพร้อมaudit |
 | POST /users | O | username,temporaryPassword → user | hash outside tx; user+membership+audit tx; ไม่คืน password |
 | PATCH /users/:id | O | active → user | revoke sessions เมื่อ disable; ห้าม disable owner สุดท้าย |
 | PUT /users/:id/memberships | O | businessRole?,storeRoles[] → memberships | lock business ก่อนนับ active owner; OWNER หรือ store roles; audit/revoke access ทันที |

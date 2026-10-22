@@ -53,6 +53,15 @@ for path, methods in doc["paths"].items():
             assert method == "get" and operation["security"] == []
             assert "200" in operation["responses"]
             continue
+        if path in {"/auth/csrf", "/auth/login", "/auth/logout", "/auth/password", "/me", "/stores", "/stores/{storeId}"}:
+            assert operation["x-implemented"] is True
+            assert "200" in operation["responses"]
+            assert "Idempotency-Key" not in headers
+            if method == "post":
+                assert {"X-CSRF-Token", "Origin"} <= headers
+            elif path == "/auth/csrf":
+                assert operation["security"] == []
+            continue
         assert "X-CSRF-Token" in headers
         if not path.endswith("/preview"):
             assert "Idempotency-Key" in headers

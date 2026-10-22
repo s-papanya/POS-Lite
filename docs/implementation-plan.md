@@ -3,7 +3,8 @@
 Phase 0 เสร็จในระดับเอกสาร; P1–P3 ยืนยันแล้ว; P4–P5 ต้องยืนยันก่อน rules ที่เกี่ยวข้อง
 ตอนส่งมอบ Phase 0 ครั้งแรกยังไม่มี Git/lockfile ปัจจุบันมี Git และ npm workspace starter เพิ่มแล้ว
 F1 implement แล้วและมีผลตรวจใน [foundation-validation.md](foundation-validation.md)
-F2 ยังไม่เริ่ม; ติดตามสถานะและเกณฑ์ปิดช่วงงานใน [milestones.md](milestones.md)
+F2 implement และผ่าน local validation แล้ว ดู [access-validation.md](access-validation.md)
+ติดตามสถานะและเกณฑ์ปิดช่วงงานใน [milestones.md](milestones.md)
 
 | ก้อน | งาน/ขอบเขต | เกณฑ์ตรวจรับ |
 |---|---|---|
