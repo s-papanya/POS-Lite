@@ -25,6 +25,7 @@ import { businessDaysChecks } from "./business-days-checks.js";
 import { salesChecks } from "./sales-checks.js";
 import { supplementalChecks } from "./supplemental-checks.js";
 import { reconciliationChecks } from "./reconciliation-checks.js";
+import { expenseCategoryChecks } from "./expense-category-checks.js";
 
 it("verifies migrations, seed, tenant constraints and runtime privileges on disposable PostgreSQL", async () => {
   config({ path: fileURLToPath(new URL("../../../.env", import.meta.url)), quiet: true });
@@ -58,7 +59,7 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
     await verifyOwnership();
     const credentials = [{ username: "test-owner", password: randomBytes(20).toString("hex") },
       { username: "test-mother", password: randomBytes(20).toString("hex") }];
-    await check("D1a to reconciliation upgrade preserves POS/supplemental bills, identity, ledger, audit and replay fixtures", async () => {
+    await check("D1a to latest upgrade preserves POS/supplemental bills, identity, ledger, audit and replay fixtures", async () => {
       const migrationRoot=fileURLToPath(new URL("../drizzle/",import.meta.url));
       const temporaryRoot=fileURLToPath(new URL("../../../.tmp/",import.meta.url));
       await mkdir(temporaryRoot,{recursive:true});
@@ -126,7 +127,7 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
         assert.match(fixture.slice(resolve(temporaryRoot).length),/^[/\\]migration-fixture-[a-f0-9-]{36}$/);
         await rm(fixture,{recursive:true});
       }
-      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 7);
+      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 8);
     });
     await grantRuntimeAccess(db);
     const runtimeTarget = new URL(process.env.DATABASE_URL!); runtimeTarget.pathname = `/${name}`;
@@ -474,6 +475,7 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
     await salesChecks(db,runtime,auth,app,check);
     await supplementalChecks(db,runtime,auth,app,check);
     await reconciliationChecks(db,runtime,auth,app,check);
+    await expenseCategoryChecks(db,runtime,auth,app,check);
     console.log(`${checks} database integration checks passed`);
   } finally {
     await runtime?.end();

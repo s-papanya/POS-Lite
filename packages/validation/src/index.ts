@@ -37,6 +37,11 @@ export const accountOpeningResponseSchema = z.strictObject({data:z.strictObject(
 export const accountListResponseSchema = z.strictObject({data:z.array(z.strictObject({id:z.uuid(),name:z.string(),type:z.enum(["CASH","BANK"])})),
   page:z.strictObject({nextCursor:z.string().nullable()})});
 export const createProductSchema = z.strictObject({name:z.string().trim().min(1).max(120),price:positiveMoneySchema});
+export const createExpenseCategorySchema = z.strictObject({name:z.string().trim().normalize("NFC").min(1).max(120)
+  .refine((v)=>!/[\p{Cc}]/u.test(v))});
+export const expenseCategorySchema = z.strictObject({id:z.uuid(),name:z.string().min(1).max(120),active:z.boolean()});
+export const expenseCategoryResponseSchema = z.strictObject({data:expenseCategorySchema});
+export const expenseCategoryListResponseSchema = z.strictObject({data:z.array(expenseCategorySchema).max(100),page:z.strictObject({nextCursor:z.string().nullable()})});
 export const updateProductSchema = z.strictObject({name:z.string().trim().min(1).max(120).optional(),
   price:positiveMoneySchema.optional(),active:z.boolean().optional(),expectedVersion:z.number().int().min(1).max(2147483646)})
   .refine((value) => value.name !== undefined || value.price !== undefined || value.active !== undefined);

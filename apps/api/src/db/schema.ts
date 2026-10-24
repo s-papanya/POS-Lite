@@ -76,6 +76,16 @@ export const auditLogs = pgTable("audit_logs", {
   name: "audit_logs_store_scope_fk" }), index("audit_logs_store_time_idx").on(t.businessId, t.storeId, t.createdAt),
   index("audit_logs_entity_idx").on(t.businessId, t.entityType, t.entityId, t.createdAt)]);
 
+export const expenseCategories = pgTable("expense_categories", {
+  id:id(),businessId:uuid("business_id").notNull().references(()=>businesses.id),
+  name:text("name").notNull(),active:boolean("active").notNull().default(true),
+  createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t)=>[unique("expense_categories_scope_uq").on(t.businessId,t.id),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"expense_categories_actor_scope_fk"}),
+  uniqueIndex("expense_categories_name_uq").on(t.businessId,sql`lower(${t.name})`),
+  check("expense_categories_name",sql`length(${t.name}) between 1 and 120 and ${t.name}=normalize(btrim(${t.name}),NFC) and ${t.name} !~ '[[:cntrl:]]'`),
+  index("expense_categories_listing_idx").on(t.businessId,t.active,t.name,t.id)]);
+
 export const products = pgTable("products", {
   id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),
   name:text("name").notNull(),price:bigint("price",{mode:"bigint"}).notNull(),
