@@ -77,7 +77,23 @@ const posSaleSchema=z.strictObject({id:z.uuid(),reference:z.string(),kind:z.lite
     tendered:nonnegativeMoneySchema.nullable(),change:nonnegativeMoneySchema.nullable()})).min(1).max(100)});
 export const supplementalSaleSchema=posSaleSchema.extend({kind:z.literal("SUPPLEMENTAL"),reason:z.string().min(1).max(1000),
   items:z.array(z.never()).max(0),discount:z.literal("0")});
-export const saleSchema=z.discriminatedUnion("kind",[posSaleSchema,supplementalSaleSchema]);
+export const reconciliationSaleSchema=supplementalSaleSchema.extend({kind:z.literal("RECONCILIATION")});
+export const saleSchema=z.discriminatedUnion("kind",[posSaleSchema,supplementalSaleSchema,reconciliationSaleSchema]);
+export const signedMoneySchema=z.string().regex(/^(0|-?[1-9][0-9]{0,12})$/).refine(v=>BigInt(v)>=-9000000000000n && BigInt(v)<=9000000000000n);
+export const reconciliationPreviewRequestSchema=z.strictObject({businessDate:businessDateSchema,
+  targets:z.array(z.strictObject({accountId:resourceIdSchema,channel:z.enum(["CASH","TRANSFER"]),amount:signedMoneySchema})).min(1).max(100)})
+  .refine(v=>new Set(v.targets.map(t=>t.accountId)).size===v.targets.length);
+export const reconciliationRequestSchema=reconciliationPreviewRequestSchema.safeExtend({occurredAt:saleRequestSchema.shape.occurredAt,
+  expectedRevision:z.string().regex(/^(0|[1-9][0-9]{0,18})$/).refine(v=>BigInt(v)<=9223372036854775807n),reason:z.string().trim().min(1).max(1000)});
+export type ReconciliationPreviewRequest=z.infer<typeof reconciliationPreviewRequestSchema>;
+export type ReconciliationRequest=z.infer<typeof reconciliationRequestSchema>;
+const aggregateMoneySchema=z.string().regex(/^(0|-?[1-9][0-9]*)$/);
+export const reconciliationLineSchema=z.strictObject({accountId:z.uuid(),channel:z.enum(["CASH","TRANSFER"]),recorded:aggregateMoneySchema,
+  target:signedMoneySchema,delta:aggregateMoneySchema,requiresReview:z.boolean()});
+export const reconciliationPreviewSchema=z.strictObject({revision:z.string().regex(/^[0-9]+$/),lines:z.array(reconciliationLineSchema),
+  netSales:aggregateMoneySchema,accountEffects:z.array(z.strictObject({accountId:z.uuid(),delta:aggregateMoneySchema}))});
+export const reconciliationPreviewResponseSchema=z.strictObject({data:reconciliationPreviewSchema});
+export const reconciliationResponseSchema=z.strictObject({data:z.strictObject({id:z.uuid(),createdSales:z.array(reconciliationSaleSchema),dayRevision:z.string().regex(/^[0-9]+$/)})});
 export const saleResponseSchema=z.strictObject({data:saleSchema});
 export const saleListResponseSchema=z.strictObject({data:z.array(saleSchema),page:z.strictObject({nextCursor:z.string().nullable()})});
 export const openBusinessDaySchema = z.strictObject({businessDate:businessDateSchema});

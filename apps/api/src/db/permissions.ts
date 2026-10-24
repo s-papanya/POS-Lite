@@ -15,6 +15,7 @@ export async function grantRuntimeAccess(pool: Pool) {
     GRANT SELECT, INSERT ON business_days, day_openings TO pos_lite_app;
     GRANT UPDATE (revision) ON business_days TO pos_lite_app;
     GRANT SELECT, INSERT ON sales, sale_items, sale_payments TO pos_lite_app;
+    GRANT SELECT, INSERT ON reconciliation_records, reconciliation_lines TO pos_lite_app;
     GRANT SELECT, INSERT ON document_counters TO pos_lite_app;
     GRANT UPDATE (next_number) ON document_counters TO pos_lite_app;
   `);

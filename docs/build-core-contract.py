@@ -288,7 +288,8 @@ SCHEMAS["SupplementalSaleRequest"] = obj({"businessDate": ref("Date"), "occurred
 SCHEMAS["SupplementalSaleRequest"]["description"] = "Positive amount equals sum of unique explicit payment accounts. No items or discount; today Bangkok only."
 SCHEMAS["SupplementalSale"] = obj({**SCHEMAS["PosSale"]["properties"], "kind": {"type": "string", "const": "SUPPLEMENTAL"},
     "reason": {"type": "string", "minLength": 1, "maxLength": 1000}, "items": {"type": "array", "maxItems": 0}, "discount": {"const": "0"}})
-SCHEMAS["SaleRead"] = {"oneOf": [ref("PosSale"), ref("SupplementalSale")]}
+SCHEMAS["ReconciliationSale"] = obj({**SCHEMAS["SupplementalSale"]["properties"], "kind": {"const": "RECONCILIATION", "type": "string"}})
+SCHEMAS["SaleRead"] = {"oneOf": [ref("PosSale"), ref("SupplementalSale"), ref("ReconciliationSale")]}
 SCHEMAS["SaleResponse"] = obj({"data": ref("SaleRead")})
 SCHEMAS["PosSaleResponse"] = obj({"data": ref("PosSale")})
 SCHEMAS["SupplementalSaleResponse"] = obj({"data": ref("SupplementalSale")})
@@ -326,8 +327,22 @@ for path in [sale_path, sale_path + "/{saleId}"]:
     paths.setdefault(path, {})["get"] = {"operationId": "getSale" if path.endswith("{saleId}") else "listSales",
         "x-implemented": True, "x-permissions": ["OWNER", "MANAGER", "STAFF"], "parameters": params, "responses": responses}
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.8.0",
-    "description": "F1/F2, S1a-c, S2 POS and D1a supplemental sale/history implemented. Five reconciliation/refund/closing paths remain design only. See api-contracts.md."},
+SCHEMAS["AggregateMoney"] = {"type": "string", "pattern": "^(0|-?[1-9][0-9]*)$", "description": "Exact aggregate satang; source and target bounds apply separately."}
+for field in ["recorded", "delta"]:
+    SCHEMAS["ReconciliationLine"]["properties"][field] = ref("AggregateMoney")
+SCHEMAS["ReconciliationPreview"]["properties"]["netSales"] = ref("AggregateMoney")
+SCHEMAS["ReconciliationPreview"]["properties"]["accountEffects"] = {"type": "array", "items": obj({"accountId": ref("Id"), "delta": ref("AggregateMoney")})}
+SCHEMAS["ReconciliationResult"]["properties"]["createdSales"] = array("ReconciliationSale")
+SCHEMAS["ReconciliationPreviewRequest"]["description"] = "Explicit unique account targets; signed satang bounded to +/-9000000000000. Omitted buckets stay unchanged."
+SCHEMAS["ReconciliationRequest"]["description"] = "Same targets plus canonical expectedRevision, today Bangkok occurredAt and trimmed reason1-1000. Recompute under day lock; negative delta409, stale409."
+for suffix in ["sales-reconciliations", "sales-reconciliations/preview"]:
+    operation = paths["/stores/{storeId}/" + suffix]["post"]
+    operation["x-implemented"] = True
+    operation["parameters"] += [p for p in post["parameters"] if p["name"] in ["Origin", "X-Expected-User-Id", "X-Expected-Business-Id"]]
+    operation["description"] = "O/M only. Preview uses repeatable-read read-only snapshot, missing day revision0, CLOSED readable. Confirm atomically records zero-only NO_CHANGE or one REC sale per positive line; increments revision per sale or once for NO_CHANGE."
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.9.0",
+    "description": "F1/F2, S1a-c, S2, D1a supplemental and D1b reconciliation implemented. Refund/closing paths remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

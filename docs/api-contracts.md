@@ -99,8 +99,8 @@ verify hash, rotate current session/revoke sessions อื่น tx; ไม่�
 | GET /stores/:storeId/sales | O/M/S | from,to,limit?,cursor? → data:sales[],page:nextCursor | implement POS/SUPPLEMENTAL history; from/to บังคับ inclusive Bangkok ไม่เกิน366วัน; keyset occurred_at/id DESC; refund/reversal status รอ D3 |
 | GET /stores/:storeId/sales/:saleId | O/M/S | — → data:sale | implement immutable snapshots/payments; cross-store404; refund refs รอ D3 |
 | POST /stores/:storeId/supplemental-sales | O/M | businessDate,occurredAt,amount,payments,reason → data:sale kind SUPPLEMENTAL | implement D1a; amount>0; sum payments=amount; ไม่มี items/discount; เปิดวันอัตโนมัติและ ledger/audit/key atomic; CLOSED409 |
-| POST /stores/:storeId/sales-reconciliations/preview | O/M | businessDate,targets[] → revision,lines,netSales,accountEffects | read snapshot เดียว; ไม่ post; CLOSED อ่านได้เพื่อแสดงผลแต่ confirm ไม่ได้ |
-| POST /stores/:storeId/sales-reconciliations | O/M | businessDate,occurredAt,expectedRevision,targets[],reason → record,createdSales,dayRevision | lock day/recompute; delta>=0 ทุก bucket; all-or-nothing; CLOSED ปฏิเสธ |
+| POST /stores/:storeId/sales-reconciliations/preview | O/M | businessDate,targets[] → data:{revision,lines,netSales,accountEffects} | implement D1b; repeatable-read read-only; ไม่ post; วันยังไม่มีคืนrevision0; CLOSED อ่านได้แต่ confirm ไม่ได้ |
+| POST /stores/:storeId/sales-reconciliations | O/M | businessDate,occurredAt,expectedRevision,targets[],reason → data:{id,createdSales,dayRevision} | implement D1b; claim key/lock day/recompute; delta>=0 ทุก bucket; atomic; CLOSED409 |
 | POST /stores/:storeId/sales/:saleId/refunds | O | businessDate,occurredAt,reason,payouts[] → refund,allocations,movements | lock current day+sale+accounts; full remaining only; คืนวัน OPEN แม้ sale เก่าปิดแล้ว; ไม่มีแก้ sale เดิม |
 | POST /stores/:storeId/reversals | O | businessDate,occurredAt,sourceKind,sourceId,reason → reversal | allowlist source kinds; server เลือก delta; lock affected days/sources/accounts; CLOSED ปฏิเสธ |
 | POST /stores/:storeId/cash-closings/preview | O/M | businessDate → revision,salesByBucket,cashAccounts,expected | snapshot เดียว; ไม่เปลี่ยนยอด |
@@ -140,6 +140,15 @@ target `{channel:"CASH"|"TRANSFER",accountId,amount}` unique(channel,accountId),
 อนุญาต target ติดลบเพื่อบันทึกผลตรวจหลังคืนเงิน; delta ที่สร้าง sale ต้อง >=0 เสมอ
 preview line `{accountId,channel,recorded,target,delta,requiresReview}`;
 negative delta preview ยัง 200 แสดงเหตุผล confirm จึง 409; ไม่มีการ clamp เป็น zero
+preview netSales เป็นยอดหลังใช้ targets เฉพาะบัญชีที่ระบุ; บัญชีที่เว้นไว้ไม่เปลี่ยน
+หากมี delta ติดลบ accountEffects เป็น[] เพราะ confirm ทำทั้งชุดไม่ได้; ไม่แสดงการลดเงินที่จะไม่เกิดขึ้นจริง
+confirm expectedRevision เป็น canonical integer string; mismatch409 STALE_PREVIEW ต้อง preview ใหม่
+delta>0 แต่ละบัญชีสร้าง sale kind RECONCILIATION/เลขREC ไม่มีitems/discount และมีreason
+cash payment ของส่วนต่างใช้ tendered=amount/change0 เพื่อบันทึกยอดสุทธิ ไม่ใช่เงินที่รับจากลูกค้ารายใหม่
+revision เพิ่มต่อsaleที่สร้าง; ทุกdelta0เพิ่มrevision1และaudit NO_CHANGE โดยไม่มีsale/movement
+reason1–1000ตัวอักษร; confirmเฉพาะวันนี้ Bangkok/ไม่อนาคต; replayตรวจสิทธิ์ปัจจุบันก่อนคืนผลเดิม
+previewไม่ต้องใช้Idempotency-Key แต่ต้องcookie/Origin/CSRF; confirmต้องkeyและใช้expected identity headersได้
+แหล่ง refund/reversal ยังไม่มีจน D3 จึงยังไม่อ้างว่าผ่านกระทบยอดหลังคืนเงินจริง
 refund request ไม่รับ allocations ที่เชื่อถือเอง: server derive จาก sale_payments;
 payout `{accountId,amount}` ไม่จำเป็นต้องบัญชีรับเดิม แต่ต้องอยู่ร้าน/ธุรกิจและ sum เต็มยอด
 closing count `{accountId,counted,reason?}`; expected/variance server คำนวณ ไม่รับเป็นข้อเท็จจริง

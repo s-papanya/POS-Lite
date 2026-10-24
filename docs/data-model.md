@@ -7,6 +7,8 @@ financial_accounts/account_stores/account_openings/money_movements เพิ่�
 business_days/day_openings เพิ่มใน0003 ดู [ผลตรวจ S1c](business-days-validation.md)
 sales/sale_items/sale_payments/document_counters เพิ่มใน0004 ดู [ผลตรวจ S2](sales-validation.md)
 0005 เพิ่ม sales.reason และชนิด SUPPLEMENTAL/counter; ไม่มี item/discount และต้องมี reason
+0006 เพิ่ม reconciliation_records/lines และชนิด RECONCILIATION; composite FKs/deferred guards
+เก็บ base_revision/day_revision และ linked sale ต่อdeltaบวก; delta0ต้องไม่มีsale, runtime INSERT-only
 deferred posting guard แยก POS item sum กับ SUPPLEMENTAL item count=0; payments/ledger ต้องครบทั้งคู่
 ledger ตอนนี้รองรับ account_opening หรือ sale_payment เท่านั้น พร้อม day_id ของ payment; เปิดวันไม่มี movement
 ชนิดขาย SUPPLEMENTAL/RECONCILIATION, debit sources และ closing ด้านล่างยังเป็น specification

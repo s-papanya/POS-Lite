@@ -162,7 +162,7 @@ export const documentCounters = pgTable("document_counters",{
   kind:text("kind").notNull(),nextNumber:bigint("next_number",{mode:"bigint"}).notNull(),
 },(t)=>[unique("document_counters_scope_uq").on(t.businessId,t.storeId,t.businessDate,t.kind),
   foreignKey({columns:[t.businessId,t.storeId],foreignColumns:[stores.businessId,stores.id],name:"document_counters_store_fk"}),
-  check("document_counters_number",sql`${t.nextNumber} > 0`),check("document_counters_kind",sql`${t.kind} in ('POS','SUPPLEMENTAL')`)]);
+  check("document_counters_number",sql`${t.nextNumber} > 0`),check("document_counters_kind",sql`${t.kind} in ('POS','SUPPLEMENTAL','RECONCILIATION')`)]);
 export const sales = pgTable("sales",{
   id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),dayId:uuid("day_id").notNull(),
   kind:text("kind").notNull().default("POS"),reason:text("reason"),reference:text("reference").notNull(),gross:bigint("gross",{mode:"bigint"}).notNull(),
@@ -173,8 +173,8 @@ export const sales = pgTable("sales",{
   foreignKey({columns:[t.businessId,t.storeId,t.dayId],foreignColumns:[businessDays.businessId,businessDays.storeId,businessDays.id],name:"sales_day_fk"}),
   foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"sales_actor_fk"}),
   check("sales_amounts",sql`${t.gross} > 0 and ${t.gross} <= 9000000000000 and ${t.discount} between 0 and ${t.gross} and ${t.net} = ${t.gross} - ${t.discount} and ${t.net} > 0`),
-  check("sales_kind",sql`${t.kind} in ('POS','SUPPLEMENTAL')`),check("sales_revision",sql`${t.dayRevision} > 0`),
-  check("sales_kind_details",sql`(${t.kind} = 'POS' and ${t.reason} is null) or (${t.kind} = 'SUPPLEMENTAL' and ${t.reason} is not null and length(trim(${t.reason})) between 1 and 1000 and ${t.discount} = 0)`),
+  check("sales_kind",sql`${t.kind} in ('POS','SUPPLEMENTAL','RECONCILIATION')`),check("sales_revision",sql`${t.dayRevision} > 0`),
+  check("sales_kind_details",sql`(${t.kind} = 'POS' and ${t.reason} is null) or (${t.kind} in ('SUPPLEMENTAL','RECONCILIATION') and ${t.reason} is not null and length(trim(${t.reason})) between 1 and 1000 and ${t.discount} = 0)`),
   index("sales_history_idx").on(t.businessId,t.storeId,t.occurredAt,t.id)]);
 export const saleItems = pgTable("sale_items",{
   id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),saleId:uuid("sale_id").notNull(),
@@ -194,3 +194,22 @@ export const salePayments = pgTable("sale_payments",{
   foreignKey({columns:[t.businessId,t.storeId,t.accountId],foreignColumns:[accountStores.businessId,accountStores.storeId,accountStores.accountId],name:"sale_payments_mapping_fk"}),
   check("sale_payments_amount",sql`${t.amount} > 0 and ${t.amount} <= 9000000000000`),
   check("sale_payments_channel",sql`(${t.channel} = 'CASH' and ${t.tendered} is not null and ${t.change} is not null and ${t.tendered} between ${t.amount} and 9000000000000 and ${t.change} = ${t.tendered} - ${t.amount}) or (${t.channel} = 'TRANSFER' and ${t.tendered} is null and ${t.change} is null)`)]);
+
+export const reconciliationRecords = pgTable("reconciliation_records",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),dayId:uuid("day_id").notNull(),
+  baseRevision:bigint("base_revision",{mode:"bigint"}).notNull(),dayRevision:bigint("day_revision",{mode:"bigint"}).notNull(),
+  reason:text("reason").notNull(),occurredAt:timestamp("occurred_at",{withTimezone:true}).notNull(),createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},t=>[unique("reconciliation_records_scope_uq").on(t.businessId,t.storeId,t.dayId,t.id),
+  foreignKey({columns:[t.businessId,t.storeId,t.dayId],foreignColumns:[businessDays.businessId,businessDays.storeId,businessDays.id],name:"reconciliation_records_day_fk"}),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"reconciliation_records_actor_fk"}),
+  check("reconciliation_records_values",sql`${t.baseRevision} >= 0 and ${t.dayRevision} > ${t.baseRevision} and length(trim(${t.reason})) between 1 and 1000`),
+  index("reconciliation_records_history_idx").on(t.dayId,t.occurredAt)]);
+export const reconciliationLines = pgTable("reconciliation_lines",{
+  id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),dayId:uuid("day_id").notNull(),
+  reconciliationId:uuid("reconciliation_id").notNull(),accountId:uuid("account_id").notNull(),channel:text("channel").notNull(),
+  recorded:bigint("recorded",{mode:"bigint"}).notNull(),target:bigint("target",{mode:"bigint"}).notNull(),delta:bigint("delta",{mode:"bigint"}).notNull(),resultingSaleId:uuid("resulting_sale_id"),
+},t=>[unique("reconciliation_lines_bucket_uq").on(t.reconciliationId,t.accountId,t.channel),unique("reconciliation_lines_sale_uq").on(t.resultingSaleId),
+  foreignKey({columns:[t.businessId,t.storeId,t.dayId,t.reconciliationId],foreignColumns:[reconciliationRecords.businessId,reconciliationRecords.storeId,reconciliationRecords.dayId,reconciliationRecords.id],name:"reconciliation_lines_record_fk"}),
+  foreignKey({columns:[t.businessId,t.storeId,t.accountId],foreignColumns:[accountStores.businessId,accountStores.storeId,accountStores.accountId],name:"reconciliation_lines_account_fk"}),
+  foreignKey({columns:[t.businessId,t.storeId,t.dayId,t.resultingSaleId],foreignColumns:[sales.businessId,sales.storeId,sales.dayId,sales.id],name:"reconciliation_lines_sale_fk"}),
+  check("reconciliation_lines_values",sql`${t.channel} in ('CASH','TRANSFER') and ${t.target} between -9000000000000 and 9000000000000 and ${t.delta} = ${t.target}::numeric - ${t.recorded} and ${t.delta} between 0 and 9000000000000 and ((${t.delta} = 0 and ${t.resultingSaleId} is null) or (${t.delta} > 0 and ${t.resultingSaleId} is not null))`)]);
