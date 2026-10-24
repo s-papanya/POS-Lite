@@ -29,6 +29,9 @@ Explain default business meaning; don't invent historical account/store/price va
 Backfill with stable keys, progress/retry semantics, row bounds and before/after reconciliation.
 Use additive/nullable transitions where needed; retain BIGINT satang and date/timezone semantics.
 
+Name normalization and uniqueness must agree across validation and PostgreSQL: normalize display values
+before storing/hash, enforce scoped case-insensitive uniqueness in the DB, and test direct SQL plus parallel
+creates. Lookup creation still needs atomic source/audit/key; it must not create ledger rows or open a day.
 Require composite tenant/store FKs, source slots, idempotency uniqueness and checks from data-model.md.
 Deferred total checks supplement service locks/atomic writes, not replace them.
 Add indexes for real history/report/closing queries; inspect existing indexes.

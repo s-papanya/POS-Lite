@@ -24,6 +24,10 @@ Health is the current scaffold exception to the business envelope; don't rewrite
 - Error {error:{code,message,requestId,details?}}: safe Thai message, optional field errors, no stack/SQL/secrets.
   Follow contract codes/statuses, including409 conflicts vs422 invalid business amounts.
   Inaccessible cross-store/business resource404; accessible store with insufficient action permission403.
+- Business-wide lookup resources (such as expense categories) derive business from session, not a fabricated store ID.
+  Manager access requires an active MANAGER assignment in an active store; STAFF is denied.
+  Bind listing cursors to business and sort keys. Normalize names before idempotency hashing/storage,
+  preserve display case, and map the database uniqueness conflict to a documented409.
 - Strict bounded schemas and response DTOs; business/actor from session, not body.
   Reject unexpected authority fields, verify account/channel and every nested resource scope.
 

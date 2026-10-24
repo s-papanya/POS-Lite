@@ -101,3 +101,8 @@ validatorต้องPyYAMLซึ่งติดตั้งชั่วคร�
 D1c อัปเดต frontend-design/test-validation พร้อมสำเนาเดิม: parent WorkState สำหรับล็อกข้ามflow,
 daily storage cleanup, คง component เมื่อซ่อนแท็บ, preview/pending consistency และแยกนับmutation POSTจากpreview/auth
 คงผลรัน/สถานะเฉพาะรอบใน daily-ui-validation.md ไม่คัดลอกจำนวนtestsหรือประวัติฟีเจอร์เข้าskills
+
+D2a อัปเดต api-design/db-migrations และสำเนา: business lookup ไม่ใช้ store สมมติ,
+MANAGER ต้องมี assignment/store active, cursor ผูกธุรกิจ, normalize ก่อน hash/store และกันชื่อซ้ำใน PostgreSQL
+พร้อมตรวจ rollback source/audit/key โดยไม่สร้าง money movement หรือเปิดวัน
+quick_validate ผ่าน10 skills; สำเนา48ไฟล์ตรงกันและลิงก์74รายการผ่าน; ไม่มี independent behavioral forward-test เพิ่ม
