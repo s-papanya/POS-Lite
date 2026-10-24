@@ -97,3 +97,7 @@ expected identity headers, revision/recompute/NO_CHANGE, signed/omitted buckets 
 ใช้ skill-creator quick_validate ผ่าน10 skills; canonical/mirror48ไฟล์ตรงกันทุกbyte และลิงก์local74รายการผ่าน
 validatorต้องPyYAMLซึ่งติดตั้งชั่วคราวใต้ `.tmp/skill-validator` ที่ignoreแล้ว ไม่แก้app dependencies/lockfile
 ไม่ได้ทำindependent behavioral forward-testซ้ำสำหรับการปรับคำแนะนำชุดนี้
+
+D1c อัปเดต frontend-design/test-validation พร้อมสำเนาเดิม: parent WorkState สำหรับล็อกข้ามflow,
+daily storage cleanup, คง component เมื่อซ่อนแท็บ, preview/pending consistency และแยกนับmutation POSTจากpreview/auth
+คงผลรัน/สถานะเฉพาะรอบใน daily-ui-validation.md ไม่คัดลอกจำนวนtestsหรือประวัติฟีเจอร์เข้าskills

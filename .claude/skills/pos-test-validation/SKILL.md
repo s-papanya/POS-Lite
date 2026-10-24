@@ -26,6 +26,10 @@ or a second runner just because a generic example uses them. Python design check
 The DB harness verifies local admin identity and a generated disposable database ownership nonce before cleanup.
 Keep that safety check; never redirect it to arbitrary DATABASE_URL. Browser fixture preview-server.mjs is simulated,
 not PostgreSQL evidence. A server-rendered receipt test does not prove Android/keyboard usability.
+For daily UI verify distinct additional-vs-total intent, signed targets, NO_CHANGE, stale re-preview,
+pending reload/login without replay, cross-flow write locks and keep/discard across stores.
+Construct pending fixtures through the strict request schemas so canonicalization matches real requests.
+Count mutation POSTs separately from preview/auth traffic when proving no automatic financial replay.
 Reconciliation races use held row locks + pg_blocking_pids barriers, not timing sleeps; test stale revision,
 NO_CHANGE audit/revision without movements, omitted buckets, multi-bucket rollback and replay after permission changes.
 Never replace missing tests with a successful placeholder or claim an absent command passed.

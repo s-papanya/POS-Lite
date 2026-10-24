@@ -12,6 +12,12 @@ Reuse apps/web/src/pos, api.ts and existing CSS; Tailwind and a component librar
 Receipt/history distinguish POS, SUPPLEMENTAL and RECONCILIATION; preserve Thai action meanings and reasons.
 Pending checkout lives in sessionStorage by user/business/store and retries only the original key/request
 on explicit action after identity checks. Do not replace it with localStorage auth or automatic replay.
+POS and daily flows aggregate WorkState in PosWorkspace; keep DailyWorkspace mounted when its tab is hidden.
+Daily storage uses the checkout identity prefix plus :daily, so store discard/logout must check and clear both.
+A pending flow blocks new writes in the other flow, while original-key retry and history remain available.
+Reconciliation edits/reload/STALE_PREVIEW invalidate unconfirmed previews; preserve the original preview,
+revision and targets with a pending confirm. Never refresh a pending payload silently.
+Keep POS success messages out of daily forms; show account loading/empty recovery and store/date in review.
 Reuse existing components. Don't install UI/router/chart/icon libraries or replace the stack merely to match a comp.
 
 ## Task before screen
