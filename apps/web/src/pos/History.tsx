@@ -47,7 +47,7 @@ export function History({ storeId, accountName, onExpired }: { storeId: string; 
         setBusy(true); setMessage('กำลังอ่านประวัติ…'); setRows([]); setCursor(null); setQuery({ ...dates, attempt: query.attempt + 1 })
       }}><label>ตั้งแต่วันที่<input type="date" value={dates.from} onChange={e => setDates({ ...dates, from: e.target.value })} required disabled={busy} /></label>
         <label>ถึงวันที่<input type="date" value={dates.to} onChange={e => setDates({ ...dates, to: e.target.value })} required disabled={busy} /></label><button disabled={busy}>ค้นหาบิล</button></form>
-      <ul className="history-list">{rows.map(sale => <li key={sale.id}><button type="button" disabled={busy} onClick={() => void open(sale.id)}><span>{sale.reference}<small>{sale.businessDate} · {sale.items.reduce((n, i) => n + i.quantity, 0)} ชิ้น</small></span><strong>{baht(sale.net)} บาท</strong></button></li>)}</ul>
+      <ul className="history-list">{rows.map(sale => <li key={sale.id}><button type="button" disabled={busy} onClick={() => void open(sale.id)}><span>{sale.reference}<small>{sale.businessDate} · {sale.kind === 'SUPPLEMENTAL' ? 'เพิ่มยอดที่ยังไม่ได้บันทึก' : `${sale.items.reduce((n, i) => n + i.quantity, 0)} ชิ้น`}</small></span><strong>{baht(sale.net)} บาท</strong></button></li>)}</ul>
       {cursor && <button type="button" className="secondary-action" disabled={busy} onClick={() => void more()}>อ่านบิลเพิ่มเติม</button>}
     </>}
     <p role="status" aria-live="polite">{message}</p>
