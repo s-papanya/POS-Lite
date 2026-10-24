@@ -13,7 +13,8 @@ S3 หน้าขาย implement และตรวจ browser fixture แล�
 D1a API เพิ่มยอด implement แล้ว ดู [supplemental-sales-validation.md](supplemental-sales-validation.md)
 D1b preview/confirm กระทบยอด implement แล้ว ดู [reconciliation-validation.md](reconciliation-validation.md)
 D1c หน้ากรอกสอง flow implement และตรวจ browser fixture แล้ว ดู [daily-ui-validation.md](daily-ui-validation.md)
-งานพัฒนาถัดไป D2 รายจ่าย/เงินเจ้าของ/โอน; ยังรอ Android จริงและตรวจหลังคืนเงินเมื่อมี D3
+D2a API หมวดรายจ่าย implement แล้ว ดู [expense-categories-validation.md](expense-categories-validation.md)
+งานพัฒนาถัดไป D2b รายจ่ายค้างจ่าย/ชำระเต็ม จากนั้นเงินเจ้าของ/โอน; ยังรอ Android จริงและตรวจหลังคืนเงินเมื่อมี D3
 วันถัดไปยัง fail closed จนมีหลักฐานปิดวัน/settlement ใน D4
 ติดตามสถานะและเกณฑ์ปิดช่วงงานใน [milestones.md](milestones.md)
 

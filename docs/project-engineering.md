@@ -9,6 +9,7 @@ S3 หน้าขาย/ชำระ/ตรวจบิล/ประวัต�
 D1a API เพิ่มยอด SUPPLEMENTAL/reason และ history เพิ่มแล้ว ดู [supplemental-sales-validation.md](supplemental-sales-validation.md)
 D1b API กระทบยอด preview/confirm เพิ่มแล้ว ดู [reconciliation-validation.md](reconciliation-validation.md)
 D1c หน้ากรอกเพิ่มยอด/ตรวจยอดทั้งวันเพิ่มแล้ว ดู [daily-ui-validation.md](daily-ui-validation.md); Android จริงยังรอตรวจ
+D2a หมวดรายจ่าย GET/POST เพิ่มแล้ว ดู [expense-categories-validation.md](expense-categories-validation.md); expense/payment/owner/transfer ยังเป็นแผน
 skills อยู่ใน `.agents/skills` ใช้เฉพาะประเภทงานที่เกี่ยวข้อง ไม่โหลดทุก skill ทุกครั้ง
 ตรวจ package/config และผลรันใหม่ก่อนอ้างสถานะ หากโค้ดต่างจากกฎธุรกิจที่ตกลงให้รายงาน gap ไม่แก้กฎตาม bug
 

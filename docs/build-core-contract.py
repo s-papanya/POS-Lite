@@ -341,8 +341,31 @@ for suffix in ["sales-reconciliations", "sales-reconciliations/preview"]:
     operation["parameters"] += [p for p in post["parameters"] if p["name"] in ["Origin", "X-Expected-User-Id", "X-Expected-Business-Id"]]
     operation["description"] = "O/M only. Preview uses repeatable-read read-only snapshot, missing day revision0, CLOSED readable. Confirm atomically records zero-only NO_CHANGE or one REC sale per positive line; increments revision per sale or once for NO_CHANGE."
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.9.0",
-    "description": "F1/F2, S1a-c, S2, D1a supplemental and D1b reconciliation implemented. Refund/closing paths remain design only. See api-contracts.md."},
+SCHEMAS["ExpenseCategoryName"] = {"type": "string", "minLength": 1, "maxLength": 120,
+    "pattern": r"^[^\u0000-\u001f\u007f-\u009f]+$", "description": "Trim and normalize NFC before validation/hash/storage. Unique lower(name) within business; preserve display case."}
+SCHEMAS["ExpenseCategoryCreateRequest"] = obj({"name": ref("ExpenseCategoryName")})
+SCHEMAS["ExpenseCategory"] = obj({"id": ref("Id"), "name": ref("ExpenseCategoryName"), "active": ref("Boolean")})
+SCHEMAS["ExpenseCategoryResponse"] = obj({"data": ref("ExpenseCategory")})
+SCHEMAS["ExpenseCategoryListResponse"] = obj({"data": array("ExpenseCategory"), "page": obj({"nextCursor": {"type": ["string", "null"]}})})
+for method in ["get", "post"]:
+    params = ([{"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}},
+               {"name": "cursor", "in": "query", "schema": {"type": "string", "maxLength": 2048}}] if method == "get" else
+              [p for p in post["parameters"] if p["name"] in ["Origin", "X-CSRF-Token", "Idempotency-Key"]])
+    response = "ExpenseCategoryListResponse" if method == "get" else "ExpenseCategoryResponse"
+    responses = {"200" if method == "get" else "201": {"description": "Active name/id page" if method == "get" else "Committed category or original replay",
+        "content": {"application/json": {"schema": ref(response)}}}}
+    for code in ["400", "401", "403", "404", "409", "413", "500"]:
+        responses[code] = {"description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {"application/json": {"schema": ref("Error")}}}
+    operation = {"operationId": "listExpenseCategories" if method == "get" else "createExpenseCategory", "x-implemented": True,
+        "parameters": params, "responses": responses, "x-permissions": ["OWNER", "MANAGER"] if method == "get" else ["OWNER"],
+        "description": "Business scope from session. Manager needs an active MANAGER assignment in an active store. Cursor binds business/name/id. No money/day effects; no edit/archive endpoint yet."}
+    if method == "post":
+        operation["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref("ExpenseCategoryCreateRequest")}}}
+    paths.setdefault("/expense-categories", {})[method] = operation
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.10.0",
+    "description": "F1/F2, S1a-c, S2, D1a-b and D2a expense categories implemented. Expense money writes, refund/closing remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

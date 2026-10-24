@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Family Store Manager core design contract",
-    "version": "0.9.0",
-    "description": "F1/F2, S1a-c, S2, D1a supplemental and D1b reconciliation implemented. Refund/closing paths remain design only. See api-contracts.md."
+    "version": "0.10.0",
+    "description": "F1/F2, S1a-c, S2, D1a-b and D2a expense categories implemented. Expense money writes, refund/closing remain design only. See api-contracts.md."
   },
   "servers": [
     {
@@ -3500,6 +3500,246 @@
           }
         }
       }
+    },
+    "/expense-categories": {
+      "get": {
+        "operationId": "listExpenseCategories",
+        "x-implemented": true,
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active name/id page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseCategoryListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-permissions": [
+          "OWNER",
+          "MANAGER"
+        ],
+        "description": "Business scope from session. Manager needs an active MANAGER assignment in an active store. Cursor binds business/name/id. No money/day effects; no edit/archive endpoint yet."
+      },
+      "post": {
+        "operationId": "createExpenseCategory",
+        "x-implemented": true,
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Committed category or original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error; CATEGORY_NAME_EXISTS or IDEMPOTENCY_CONFLICT for409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-permissions": [
+          "OWNER"
+        ],
+        "description": "Business scope from session. Manager needs an active MANAGER assignment in an active store. Cursor binds business/name/id. No money/day effects; no edit/archive endpoint yet.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseCategoryCreateRequest"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5460,6 +5700,90 @@
         "type": "string",
         "pattern": "^(0|-?[1-9][0-9]*)$",
         "description": "Exact aggregate satang; source and target bounds apply separately."
+      },
+      "ExpenseCategoryName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120,
+        "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$",
+        "description": "Trim and normalize NFC before validation/hash/storage. Unique lower(name) within business; preserve display case."
+      },
+      "ExpenseCategoryCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/ExpenseCategoryName"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "ExpenseCategory": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "$ref": "#/components/schemas/ExpenseCategoryName"
+          },
+          "active": {
+            "$ref": "#/components/schemas/Boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "active"
+        ]
+      },
+      "ExpenseCategoryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ExpenseCategory"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "ExpenseCategoryListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpenseCategory"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "page": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "nextCursor"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "page"
+        ]
       }
     }
   }

@@ -1,6 +1,7 @@
 # REST API contracts
 
 Base `/api/v1`; JSON UTF-8; UUID identifiers; amount เป็น integer string หน่วยสตางค์
+D2a implement GET/POST `/expense-categories` แล้ว ดู [ผลตรวจหมวดรายจ่าย](expense-categories-validation.md); ยังไม่มี expense/payment/owner/transfer API
 S2 implement POST/GET /stores/:storeId/sales และ GET /stores/:storeId/sales/:saleId แล้ว ดู [sales-validation.md](sales-validation.md)
 day revision/expectedRevision เป็น nonnegative integer string รองรับ PostgreSQL BIGINT โดยไม่เสีย precision; product version ยังเป็น integer
 F1 health และ F2 `/auth/*`, `/me`, GET `/stores`, GET `/stores/:storeId` implement แล้ว
@@ -81,8 +82,8 @@ O=OWNER ใน business; M=MANAGER เฉพาะร้านที่มี me
 | POST /accounts | O | name,type,storeIds[] → account | CASH หนึ่งร้าน; BANK หลายร้าน; audit tx |
 | PATCH /accounts/:id | O | name?,active? → account | ไม่เปลี่ยน type/store mapping ที่ใช้แล้ว |
 | POST /accounts/:id/opening | O | storeId,amount,cutoverAt,reason → opening | ครั้งเดียว; source+ledger+audit tx; amount=0 ไม่มี movement |
-| GET /expense-categories | O/M | — → categories | scope business |
-| POST /expense-categories | O | name → category | unique normalized name; audit |
+| GET /expense-categories | O/M | limit,cursor → categories,page | implement แล้ว; active เท่านั้น; scope business; MANAGER ต้องมี assignment/store active |
+| POST /expense-categories | O | name → category | implement แล้ว; unique normalized name; audit+key atomic |
 
 master data เปลี่ยนได้แม้บางวัน CLOSED เพราะไม่มี posting; snapshots เก่าไม่เปลี่ยน
 การตั้ง business/stores ครั้งแรกทำผ่าน development seed; UI เพิ่มร้านนอกสองร้านยังไม่อยู่ MVP

@@ -37,7 +37,7 @@ audit actor FK RESTRICT เพื่อรักษาประวัติ ไ�
 | products / เมนูต่อร้าน | id,B,S,name text,price bigint,version int,active boolean,T,U | price>0, version>0; index(B,S,active,name); current price update เพิ่ม version |
 | financial_accounts / บัญชีจริง | id,B,name text,type text,active boolean,T,U | type CASH/BANK; unique(B,name); index(B,active) |
 | account_stores / อนุญาตบัญชี | id,B,S,account_id,T,U | composite FK account; unique(B,S,account_id); index(B,account_id) |
-| expense_categories / หมวด | id,B,name text,active boolean,T,U | unique(B,name) |
+| expense_categories / หมวด | id,B,name text,active boolean,T,U | D2a implement; unique(B,lower(name)); trim/NFC,1–120,ไม่มี control characters; composite actor FK; index(B,active,name,id) |
 
 cash account หนึ่งร้านต่อบัญชี enforce ด้วย deferred constraint trigger บน account_stores/accounts
 bank แชร์ได้หลายร้านแต่ไม่มี balance ซ้ำ; ห้ามเปลี่ยน type/ถอด store mapping ที่ใช้ในประวัติ
