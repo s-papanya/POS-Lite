@@ -7,7 +7,9 @@ F2 implement และผ่าน local validation แล้ว ดู [access-
 S1a API เมนู/ราคา/version/audit/idempotency implement แล้ว ดู [catalog-validation.md](catalog-validation.md)
 S1b บัญชี/ledger opening implement แล้ว ดู [accounts-validation.md](accounts-validation.md)
 S1c เปิดวันแรก/day opening snapshots implement แล้ว ดู [business-days-validation.md](business-days-validation.md)
-S2 API ธุรกรรม POS/ประวัติ implement แล้ว ดู [sales-validation.md](sales-validation.md); งานถัดไป S3 หน้าจอ Android
+S2 API ธุรกรรม POS/ประวัติ implement แล้ว ดู [sales-validation.md](sales-validation.md)
+S3 หน้าขาย implement และตรวจ browser fixture แล้ว ดู [pos-validation.md](pos-validation.md)
+ยังรอตรวจ Android เครื่องจริงก่อนปิด M2; งานพัฒนาถัดไป D1 เพิ่มยอด/กระทบยอด
 วันถัดไปยัง fail closed จนมีหลักฐานปิดวัน/settlement ใน D4
 ติดตามสถานะและเกณฑ์ปิดช่วงงานใน [milestones.md](milestones.md)
 
