@@ -11,4 +11,7 @@ it('labels supplemental history receipts explicitly instead of inventing product
   const html = renderToStaticMarkup(createElement(Receipt, { sale, accountName: () => 'บัญชี' }))
   for (const text of ['เพิ่มยอดที่ยังไม่ได้บันทึก', 'ยอดขายช่วงเช้า', 'ยอดขายเพิ่มเติม', '100.00']) assert.ok(html.includes(text))
   assert.equal(html.includes('ส่วนลด'), false)
+  const reconciliation = renderToStaticMarkup(createElement(Receipt, { sale: { ...sale, kind: 'RECONCILIATION' }, accountName: () => 'บัญชี' }))
+  assert.ok(reconciliation.includes('ส่วนต่างจากการตรวจยอดขายรวมทั้งวัน'))
+  assert.ok(reconciliation.includes('ยอดขายส่วนต่าง'))
 })
