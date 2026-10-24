@@ -7,7 +7,8 @@ S1c เปิดวันแรก/snapshot เงินสดเพิ่มแ
 S2 POS sale/history API เพิ่มแล้ว ดู [sales-validation.md](sales-validation.md)
 S3 หน้าขาย/ชำระ/ตรวจบิล/ประวัติเพิ่มแล้ว ดู [pos-validation.md](pos-validation.md); ยังรอ Android เครื่องจริง
 D1a API เพิ่มยอด SUPPLEMENTAL/reason และ history เพิ่มแล้ว ดู [supplemental-sales-validation.md](supplemental-sales-validation.md)
-D1b API กระทบยอด preview/confirm เพิ่มแล้ว ดู [reconciliation-validation.md](reconciliation-validation.md); UI รอ D1c
+D1b API กระทบยอด preview/confirm เพิ่มแล้ว ดู [reconciliation-validation.md](reconciliation-validation.md)
+D1c หน้ากรอกเพิ่มยอด/ตรวจยอดทั้งวันเพิ่มแล้ว ดู [daily-ui-validation.md](daily-ui-validation.md); Android จริงยังรอตรวจ
 skills อยู่ใน `.agents/skills` ใช้เฉพาะประเภทงานที่เกี่ยวข้อง ไม่โหลดทุก skill ทุกครั้ง
 ตรวจ package/config และผลรันใหม่ก่อนอ้างสถานะ หากโค้ดต่างจากกฎธุรกิจที่ตกลงให้รายงาน gap ไม่แก้กฎตาม bug
 
@@ -20,7 +21,7 @@ skills อยู่ใน `.agents/skills` ใช้เฉพาะประเ�
 | CI/CD | ยังไม่มี workflows หรือ deployment manifests | CI, staging/production pipeline, backup/restore |
 | Lint | Root ESLint สำหรับ API/tests/packages; เว็บ Hooks/Fast Refresh; root build/typecheck/lint/test | CI quality gates |
 | Style | API double quotes/semicolons; เว็บ single quotes/no semicolons เป็นหลัก | formatter/import sorting ที่ enforce ร่วมกัน |
-| UI | Thai shell/navy, login/store, POS basket/payment/review/receipt/history, identity-bound sessionStorage draft | Android เครื่องจริง, password-change UI, เมนู/บัญชี management UI |
+| UI | Thai shell/navy, login/store, POS/เพิ่มยอด/ตรวจยอดทั้งวัน/review/receipt/history, identity-bound sessionStorage draft | Android เครื่องจริง, password-change UI, เมนู/บัญชี management UI |
 | Git | GitHub origin, main, Conventional Commit ตัวอย่างใน history | protection/required checks/hooks ยังไม่ถือว่าตั้งแล้ว |
 
 คำสั่งที่มีตอนนี้จาก root (ตรวจ scripts อีกครั้งก่อนใช้):

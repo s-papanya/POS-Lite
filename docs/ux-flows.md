@@ -53,7 +53,9 @@ close: “ส่วนต่างนี้ยังไม่ปรับยอ�
 | Session expired | หยุดส่ง เข้า login; bind draft กับ user/business/store; ห้าม replay ในนามผู้ใช้อื่น |
 | Day closed | แสดงสถานะและทางดูประวัติ; OWNER มี reopen พร้อมเหตุผล |
 
-draft เก็บเฉพาะรายการสินค้าที่ยังไม่ยืนยันใน sessionStorage แบบผูก identity;
+draft POS/ยอดเพิ่มเติม/target ตรวจยอด เก็บใน sessionStorage แบบผูก user/business/store;
+DailyWorkspace คง mount เมื่อสลับแท็บ; pending flow หนึ่งป้องกันเริ่มรายการใหม่อีก flow แต่เปิดประวัติและกู้รายการเดิมได้
+preview ที่ยังไม่ยืนยันต้องตรวจใหม่หลังแก้ข้อมูล/reload/STALE_PREVIEW; pending confirm เก็บ preview/revision/targets เดิม
 pending mutation เก็บ key และ payload ตามความจำเป็นใน sessionStorage ไม่เก็บ password/session token
 logout แจ้งว่ามีผลค้างและล้างข้อมูลส่วนตัว; หลัง login เดิมต้องให้ตรวจสถานะด้วย key เดิมก่อนเริ่มใหม่
 การปิด tab ขณะ timeout อาจเสีย draft: ไม่รับประกัน recovery offline ต้องตรวจประวัติ server ก่อนบันทึกใหม่

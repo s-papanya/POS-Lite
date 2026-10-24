@@ -9,11 +9,11 @@
 
 ## สถานะปัจจุบัน
 
-**F1/F2, S1a–c, S2 API และ S3 หน้าขาย POS implement แล้ว — ยังไม่เปิดขายจริง**
+**F1/F2, S1a–c, S2/S3 POS และ D1a–c เพิ่มยอด/กระทบยอด implement แล้ว — ยังไม่เปิดขายจริง**
 
 D1a API “เพิ่มยอดที่ยังไม่ได้บันทึก” เพิ่มแล้วสำหรับ OWNER/MANAGER พร้อมแยกประเภทในประวัติ
 ดู [ผลตรวจ D1a](docs/supplemental-sales-validation.md) และ [D1b API preview/confirm กระทบยอด](docs/reconciliation-validation.md)
-หน้ากรอกเพิ่มยอดและกระทบยอดยังเป็นงานถัดไป
+D1c หน้ากรอกสอง flow เพิ่มแล้ว พร้อม draft/review/กู้รายการค้าง ดู [ผลตรวจหน้าจอ](docs/daily-ui-validation.md)
 
 | ส่วน | สิ่งที่มีตอนนี้ |
 |---|---|
