@@ -12,7 +12,8 @@
 **F1/F2, S1a–c, S2 API และ S3 หน้าขาย POS implement แล้ว — ยังไม่เปิดขายจริง**
 
 D1a API “เพิ่มยอดที่ยังไม่ได้บันทึก” เพิ่มแล้วสำหรับ OWNER/MANAGER พร้อมแยกประเภทในประวัติ
-ดู [ผลตรวจ D1a](docs/supplemental-sales-validation.md); หน้ากรอกเพิ่มยอดและกระทบยอดยังเป็นงานถัดไป
+ดู [ผลตรวจ D1a](docs/supplemental-sales-validation.md) และ [D1b API preview/confirm กระทบยอด](docs/reconciliation-validation.md)
+หน้ากรอกเพิ่มยอดและกระทบยอดยังเป็นงานถัดไป
 
 | ส่วน | สิ่งที่มีตอนนี้ |
 |---|---|
@@ -20,7 +21,7 @@ D1a API “เพิ่มยอดที่ยังไม่ได้บัน
 | Frontend | เข้าสู่ระบบ เลือกร้าน เมนู/ตะกร้า ชำระ/ตรวจบิล ใบยืนยันและประวัติ; draft แยกผู้ใช้/กิจการ/ร้าน |
 | Backend | Cookie sessions, CSRF/Origin, DB-backed rate limit, revoke/expiry และ store isolation |
 | เมนู/ราคา | API เพิ่ม/แก้/ปิดเมนูสำหรับ OWNER พร้อม version, audit และ idempotency; ยังไม่มีหน้าจัดเมนู |
-| ฐานข้อมูล | PostgreSQL + Drizzle migrations 20 ตาราง, runtime role แยกจาก admin, seed OWNER สองบัญชี/สองร้าน |
+| ฐานข้อมูล | PostgreSQL + Drizzle migrations 22 ตาราง, runtime role แยกจาก admin, seed OWNER สองบัญชี/สองร้าน |
 | บัญชี | API สร้าง CASH/BANK ผูกร้าน และยอดตั้งต้นครั้งเดียวลง ledger; ยังไม่มีหน้าจัดบัญชี |
 | วันทำการ | API เปิดวันแรกตามวันที่กรุงเทพฯ พร้อม snapshot เงินสดจาก ledger; STAFF อ่านได้โดยไม่เห็นยอดเงิน |
 | ขาย POS | หน้าขายเรียก API จริง รองรับแบ่งชำระ/เงินทอน/ส่วนลด/ราคาเปลี่ยน; timeout กู้ด้วย key เดิมโดยผู้ใช้กดเอง |
