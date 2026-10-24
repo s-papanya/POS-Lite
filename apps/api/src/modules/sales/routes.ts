@@ -34,6 +34,8 @@ export function salesRouter(auth:AuthService) {
       z.strictObject({}).parse(req.query);
       if(req.get("Origin")!==auth.config.origin) throw new AuthError(403,"ORIGIN_INVALID");
       auth.requireCsrf(session,req.get("X-CSRF-Token"));
+      const expectedUser=req.get("X-Expected-User-Id"); const expectedBusiness=req.get("X-Expected-Business-Id");
+      if((expectedUser || expectedBusiness) && (expectedUser!==actor.user_id || expectedBusiness!==actor.business_id)) throw new AuthError(403,"SESSION_CONTEXT_CHANGED");
       const result=await service.create(actor,storeId,id.parse(req.get("Idempotency-Key")),saleRequestSchema.parse(req.body),String(res.getHeader("X-Request-Id")));
       res.status(result.status).json(result.body);
     } catch(error) {

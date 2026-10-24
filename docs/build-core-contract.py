@@ -289,6 +289,9 @@ SCHEMAS["SaleListResponse"] = obj({"data": {"type": "array", "items": ref("PosSa
 sale_path = "/stores/{storeId}/sales"
 post = paths[sale_path]["post"]
 post["x-implemented"] = True
+for header in ["X-Expected-User-Id", "X-Expected-Business-Id"]:
+    post["parameters"].append({"name": header, "in": "header", "required": False, "schema": ref("Id"),
+        "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."})
 post["parameters"].append({"name": "Origin", "in": "header", "required": True, "schema": {"type": "string", "format": "uri"}})
 post["responses"]["201"]["content"]["application/json"]["schema"] = ref("SaleResponse")
 for path in [sale_path, sale_path + "/{saleId}"]:

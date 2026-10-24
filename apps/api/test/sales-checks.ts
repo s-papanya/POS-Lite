@@ -211,4 +211,19 @@ export async function salesChecks(db:Pool,runtime:Pool,auth:AuthService,app:Expr
     const retry=await send(`/stores/${f.storeId}/sales`,input,key);
     assert.equal(retry.status,201); assert.equal(retry.body.data.items[0].unitPrice,"4000");
   });
+  await check("expected identity headers reject a switched browser session before claiming or posting",async()=>{
+    const f=await fixture(); const input={...body(f),payments:[{accountId:f.cash,channel:"CASH" as const,amount:"9975",tendered:"10000"}]};
+    const key=randomUUID(); const other=randomUUID();
+    await db.query("INSERT INTO users(id,username,password_hash) SELECT $1,$2,password_hash FROM users WHERE id=$3",[other,randomUUID(),owner.user_id]);
+    await db.query("INSERT INTO business_memberships(business_id,user_id,role,created_by) VALUES($1,$2,'OWNER',$3)",[owner.business_id,other,owner.user_id]);
+    const switched=await auth.issue(runtime,other,owner.business_id);
+    const guarded=(session:typeof issued,businessId=owner.business_id)=>request(app).post(`/api/v1/stores/${f.storeId}/sales`)
+      .set("Cookie",`pos_lite_session=${session.token}`).set("Origin",auth.config.origin).set("X-CSRF-Token",session.csrfToken).set("Idempotency-Key",key)
+      .set("X-Expected-User-Id",owner.user_id).set("X-Expected-Business-Id",businessId).send(input);
+    assert.equal((await guarded(switched)).body.error.code,"SESSION_CONTEXT_CHANGED");
+    assert.equal((await guarded(issued,randomUUID())).status,403);
+    assert.equal((await db.query("SELECT count(*)::int AS n FROM sales WHERE store_id=$1",[f.storeId])).rows[0].n,0);
+    assert.equal((await db.query("SELECT count(*)::int AS n FROM idempotency_records WHERE key=$1",[key])).rows[0].n,0);
+    assert.equal((await guarded(issued)).status,201);
+  });
 }

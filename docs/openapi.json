@@ -71,6 +71,24 @@
             }
           },
           {
+            "name": "X-Expected-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
+            "name": "X-Expected-Business-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
             "name": "Origin",
             "in": "header",
             "required": true,
