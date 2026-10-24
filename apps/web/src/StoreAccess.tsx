@@ -5,6 +5,7 @@ import { csrfResponseSchema, meResponseSchema } from '@pos-lite/validation'
 import { PosWorkspace } from './pos/PosWorkspace'
 import { scopeKey, selectionKey } from './pos/state'
 import type { WorkState } from './pos/PosWorkspace'
+import { dailyKey } from './pos/daily-state'
 
 async function api(path: string, options?: RequestInit) {
   return fetch(`/api/v1${path}`, { ...options, credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(8000) })
@@ -18,6 +19,7 @@ export function StoreAccess() {
   const [attempt, setAttempt] = useState(0)
   const [work, setWork] = useState<WorkState>({ draft: false, pending: false })
   const [leaving, setLeaving] = useState<'store' | 'logout' | null>(null)
+  const [blockedLeave, setBlockedLeave] = useState(false)
   const expired = useCallback(() => { setMe(null); setSelected(''); setWork({ draft: false, pending: false }); setMessage('บัญชีหมดอายุหรือเปลี่ยนแล้ว กรุณาเข้าสู่ระบบเดิมเพื่อตรวจบิลค้าง ไม่มีการส่งซ้ำอัตโนมัติ') }, [])
   function restoreSelection(data: MeResponse['data']) {
     try { const id = sessionStorage.getItem(selectionKey(data.user.id, data.business.id)); return data.stores.some(s => s.id === id) ? id! : '' } catch { return '' }
@@ -83,7 +85,7 @@ export function StoreAccess() {
     finally { setPending(false) }
   }
   function leave(action: 'store' | 'logout') {
-    if (work.pending) { setMessage('ยังมีบิลรอยืนยัน กรุณาตรวจผลบิลเดิมก่อนเปลี่ยนร้านหรือออกจากระบบ'); return }
+    if (work.pending) { setBlockedLeave(true); return }
     if (action === 'logout' && me) {
       try {
         const prefix = `pos-lite:checkout:${me.user.id}:${me.business.id}:`
@@ -98,7 +100,10 @@ export function StoreAccess() {
   function finishLeave(discard: boolean) {
     if (!me || !leaving) return
     if (work.pending) { setLeaving(null); setMessage('ยังมีบิลรอยืนยัน จึงยังไม่ทิ้งรายการหรือเปลี่ยนร้าน'); return }
-    if (discard && selected) sessionStorage.removeItem(scopeKey({ userId: me.user.id, businessId: me.business.id, storeId: selected }))
+    if (discard && selected) {
+      const scope = { userId: me.user.id, businessId: me.business.id, storeId: selected }
+      sessionStorage.removeItem(scopeKey(scope)); sessionStorage.removeItem(dailyKey(scope))
+    }
     const action = leaving; setLeaving(null); setSelected(''); setWork({ draft: false, pending: false })
     if (action === 'logout') void logout()
   }
@@ -126,7 +131,7 @@ export function StoreAccess() {
       <input id="password" name="password" type="password" autoComplete="current-password" required maxLength={128} disabled={pending} />
       <button type="submit" disabled={pending}>{pending ? 'กำลังตรวจสอบ…' : 'เข้าสู่ระบบ'}</button>
     </form>}
-    <p role="status" aria-live="polite">{message}</p>
+    <p role="status" aria-live="polite">{blockedLeave && work.pending ? 'กำลังทำรายการหรือมีผลรอยืนยัน กรุณาตรวจผลรายการเดิมก่อนเปลี่ยนร้านหรือออกจากระบบ' : message}</p>
     {!selected && <button type="button" className="secondary-action" disabled={pending} onClick={() => {setPending(true);setMessage('กำลังตรวจสอบบัญชี…');setAttempt((n) => n+1)}}>ตรวจสอบบัญชีอีกครั้ง</button>}
   </section>
 }

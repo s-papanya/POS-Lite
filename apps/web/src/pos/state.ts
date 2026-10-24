@@ -6,6 +6,17 @@ export type Scope = { userId: string; businessId: string; storeId: string }
 export type Draft = { date: string; items: { product: Product; quantity: number }[]; discountKind: 'FIXED' | 'PERCENT'; discount: string;
   payments: { accountId: string; amount: string; tendered: string }[] }
 export type Pending = { scope: string; key: string; request: SaleRequest }
+export type ReceivingAccount = { id: string; name: string; type: 'CASH' | 'BANK' }
+export function preparePayments(rows: Draft['payments'], accounts: ReceivingAccount[]) {
+  return rows.map(p => {
+    const account = accounts.find(a => a.id === p.accountId); const amount = satang(p.amount)
+    if (!account || amount === null || amount <= 0n) throw new Error('เลือกบัญชีและจำนวนเงินให้ครบทุกช่องทาง')
+    if (account.type === 'BANK') return { accountId: account.id, channel: 'TRANSFER' as const, amount: String(amount) }
+    const tendered = satang(p.tendered)
+    if (tendered === null || tendered < amount) throw new Error('กรอกเงินสดที่รับมาให้ไม่น้อยกว่ายอดเงินสด')
+    return { accountId: account.id, channel: 'CASH' as const, amount: String(amount), tendered: String(tendered) }
+  })
+}
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 export const scopeKey = (scope: Scope) => `pos-lite:checkout:${scope.userId}:${scope.businessId}:${scope.storeId}`
 export const selectionKey = (userId: string, businessId: string) => `pos-lite:selected:${userId}:${businessId}`

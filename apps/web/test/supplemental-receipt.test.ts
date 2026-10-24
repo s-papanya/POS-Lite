@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { createElement } from 'react'
+import { createElement, Fragment } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { it } from 'vitest'
 import { Receipt } from '../src/pos/Receipt'
@@ -14,4 +14,8 @@ it('labels supplemental history receipts explicitly instead of inventing product
   const reconciliation = renderToStaticMarkup(createElement(Receipt, { sale: { ...sale, kind: 'RECONCILIATION' }, accountName: () => 'บัญชี' }))
   assert.ok(reconciliation.includes('ส่วนต่างจากการตรวจยอดขายรวมทั้งวัน'))
   assert.ok(reconciliation.includes('ยอดขายส่วนต่าง'))
+  const paired = renderToStaticMarkup(createElement(Fragment, null, createElement(Receipt, { sale, accountName: () => 'บัญชี' }), createElement(Receipt, { sale, accountName: () => 'บัญชี' })))
+  const titles = [...paired.matchAll(/<h3 id="([^"]+)"/g)].map(m => m[1])
+  const labels = [...paired.matchAll(/aria-labelledby="([^"]+)"/g)].map(m => m[1])
+  assert.equal(titles.length, 2); assert.equal(new Set(titles).size, 2); assert.deepEqual(labels, titles)
 })

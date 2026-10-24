@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AccessibleStore, MeResponse, Product, Sale } from '@pos-lite/shared'
 import { accountListResponseSchema, businessDayResponseSchema, meResponseSchema, productListResponseSchema, productSchema, saleRequestSchema, saleResponseSchema } from '@pos-lite/validation'
 import { allPages, ApiFailure, csrfToken, request } from '../api'
-import { baht, bangkokDate, definitiveRejection, emptyDraft, hasDraft, inputBaht, loadWorkspace, satang, saveWorkspace, scopeKey, totals } from './state'
+import { baht, bangkokDate, definitiveRejection, emptyDraft, hasDraft, inputBaht, loadWorkspace, preparePayments, satang, saveWorkspace, scopeKey, totals } from './state'
 import type { Draft, Pending } from './state'
 import { History } from './History'
 import { Receipt } from './Receipt'
+import { DailyWorkspace } from './DailyWorkspace'
+import { emptyDaily, hasDaily, loadDaily } from './daily-state'
 
 export type WorkState = { draft: boolean; pending: boolean }
 type Account = { id: string; name: string; type: 'CASH' | 'BANK' }
@@ -19,7 +21,9 @@ export function PosWorkspace({ me, store, onExpired, onWorkChange }: { me: MeRes
   const [seed] = useState(() => { try { return loadWorkspace(sessionStorage, scope) } catch { return { draft: emptyDraft(), pending: null, corrupt: true } } })
   const [draft, setDraft] = useState(seed.draft); const [pending, setPending] = useState<Pending | null>(seed.pending)
   const [products, setProducts] = useState<Product[]>([]); const [accounts, setAccounts] = useState<Account[]>([])
-  const [tab, setTab] = useState<'sale' | 'history'>('sale'); const [step, setStep] = useState<'items' | 'pay' | 'review'>(seed.pending ? 'review' : 'items')
+  const [dailySeed] = useState(() => { try { return loadDaily(sessionStorage, scope) } catch { return { draft: { ...emptyDaily() }, pending: null, corrupt: true } } })
+  const [dailyWork, setDailyWork] = useState<WorkState>({ draft: hasDaily(dailySeed.draft), pending: !!dailySeed.pending || dailySeed.corrupt })
+  const [tab, setTab] = useState<'sale' | 'history' | 'daily'>(dailySeed.pending || dailySeed.corrupt ? 'daily' : 'sale'); const [step, setStep] = useState<'items' | 'pay' | 'review'>(seed.pending ? 'review' : 'items')
   const [receipt, setReceipt] = useState<Sale | null>(null); const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState(seed.corrupt ? 'ข้อมูลบิลค้างอ่านไม่ได้ กรุณาตรวจประวัติและให้เจ้าของช่วยกู้รายการก่อนขายต่อ' : seed.pending ? 'มีบิลรอยืนยัน กรุณาตรวจผลด้วยรายการเดิม' : hasDraft(seed.draft) ? 'นำรายการที่ยังไม่ส่งกลับมาแล้ว กรุณาตรวจร้านและยอดอีกครั้ง' : '')
   const [attempt, setAttempt] = useState(0); const [search, setSearch] = useState(''); const [closed, setClosed] = useState(false)
@@ -34,7 +38,7 @@ export function PosWorkspace({ me, store, onExpired, onWorkChange }: { me: MeRes
     const timer = window.setInterval(() => setToday(bangkokDate()), 30000)
     return () => { window.removeEventListener('online', connected); window.removeEventListener('offline', connected); window.clearInterval(timer) }
   }, [])
-  useEffect(() => { onWorkChange({ draft: hasDraft(draft), pending: !!pending || seed.corrupt || busy }) }, [draft, pending, seed.corrupt, busy, onWorkChange])
+  useEffect(() => { onWorkChange({ draft: hasDraft(draft) || dailyWork.draft, pending: !!pending || seed.corrupt || busy || dailyWork.pending }) }, [draft, pending, seed.corrupt, busy, dailyWork, onWorkChange])
   useEffect(() => {
     let active = true
     Promise.all([allPages(`/stores/${store.id}/products?limit=100`, productListResponseSchema), allPages(`/stores/${store.id}/accounts?limit=100`, accountListResponseSchema),
@@ -49,7 +53,7 @@ export function PosWorkspace({ me, store, onExpired, onWorkChange }: { me: MeRes
     catch { setMessage('เก็บรายการค้างในอุปกรณ์ไม่ได้ จึงยังไม่ส่งบิล กรุณาตรวจการตั้งค่าเบราว์เซอร์'); return false }
   }
   function edit(next: Draft) {
-    if (pending || seed.corrupt || busy) return
+    if (pending || seed.corrupt || busy || dailyWork.pending) return
     if (!hasDraft(draft)) next = { ...next, date: bangkokDate() }
     persist(next, null); setDraft(next); setReceipt(null)
   }
@@ -66,14 +70,7 @@ export function PosWorkspace({ me, store, onExpired, onWorkChange }: { me: MeRes
   function prepare() {
     if (moneyError) throw new Error(moneyError)
     if (!draft.items.length || money.net <= 0n) throw new Error('กรุณาเลือกสินค้า และตรวจให้ยอดหลังส่วนลดมากกว่าศูนย์')
-    const payments = draft.payments.map(p => {
-      const account = accounts.find(a => a.id === p.accountId); const amount = satang(p.amount)
-      if (!account || amount === null || amount <= 0n) throw new Error('เลือกบัญชีและจำนวนเงินให้ครบทุกช่องทาง')
-      if (account.type === 'BANK') return { accountId: account.id, channel: 'TRANSFER' as const, amount: String(amount) }
-      const tendered = satang(p.tendered)
-      if (tendered === null || tendered < amount) throw new Error('กรอกเงินสดที่รับมาให้ไม่น้อยกว่ายอดเงินสด')
-      return { accountId: account.id, channel: 'CASH' as const, amount: String(amount), tendered: String(tendered) }
-    })
+    const payments = preparePayments(draft.payments, accounts)
     if (payments.reduce((sum, p) => sum + BigInt(p.amount), 0n) !== money.net) throw new Error('ยอดชำระทุกช่องทางต้องรวมเท่ากับยอดบิล')
     const parsed = saleRequestSchema.safeParse({ businessDate: draft.date, occurredAt: new Date().toISOString(),
       items: draft.items.map(i => ({ productId: i.product.id, expectedVersion: i.product.version, quantity: i.quantity })),
@@ -82,7 +79,7 @@ export function PosWorkspace({ me, store, onExpired, onWorkChange }: { me: MeRes
     return parsed.data
   }
   async function submit() {
-    if (sending.current || !online || seed.corrupt) return
+    if (sending.current || !online || seed.corrupt || (dailyWork.pending && !pending)) return
     sending.current = true; setBusy(true); setMessage('กำลังตรวจบัญชีและบันทึกบิล…')
     let transaction = pending
     try {
@@ -112,18 +109,19 @@ export function PosWorkspace({ me, store, onExpired, onWorkChange }: { me: MeRes
       errorRef.current?.focus()
     } finally { sending.current = false; if (alive.current) setBusy(false) }
   }
-  const locked = !!pending || seed.corrupt || busy
+  const locked = !!pending || seed.corrupt || busy || dailyWork.pending
   const oldDate = draft.date !== today
   const paid = draft.payments.reduce((sum, p) => sum + (satang(p.amount) ?? 0n), 0n)
   const reviewedPayments = pending?.request.payments ?? draft.payments.map(p => ({ accountId: p.accountId, channel: accounts.find(a => a.id === p.accountId)?.type === 'CASH' ? 'CASH' as const : 'TRANSFER' as const,
     amount: String(satang(p.amount) ?? 0n), tendered: String(satang(p.tendered) ?? 0n) }))
   return <section className="pos" aria-labelledby="store-title">
     <header className="pos-heading"><h1 id="store-title">{store.name}</h1><p>วันทำการ {pending?.request.businessDate ?? draft.date}</p></header>
-    <nav className="pos-tabs" aria-label="งานหน้าร้าน"><button type="button" aria-current={tab === 'sale' ? 'page' : undefined} onClick={() => setTab('sale')}>ขายสินค้า{pending ? ' · รอยืนยัน' : ''}</button><button type="button" aria-current={tab === 'history' ? 'page' : undefined} onClick={() => setTab('history')}>ประวัติบิล</button></nav>
+    <nav className="pos-tabs" aria-label="งานหน้าร้าน"><button type="button" aria-current={tab === 'sale' ? 'page' : undefined} onClick={() => setTab('sale')}>ขายสินค้า{pending ? ' · รอยืนยัน' : ''}</button><button type="button" aria-current={tab === 'history' ? 'page' : undefined} onClick={() => setTab('history')}>ประวัติบิล</button>{(store.role !== 'STAFF' || dailyWork.draft || dailyWork.pending) && <button type="button" aria-current={tab === 'daily' ? 'page' : undefined} aria-label="เพิ่มเติม / ตรวจยอด" onClick={() => setTab('daily')}>งานยอดขาย{dailyWork.pending ? ' · รอยืนยัน' : ''}</button>}</nav>
     {!online && <p className="notice">ยังไม่ได้เชื่อมต่อ รายการยังอยู่ในอุปกรณ์ จะไม่ส่งบิลอัตโนมัติ</p>}
     {closed && <p className="notice">วันทำการนี้ปิดแล้ว ดูประวัติบิลได้ หรือติดต่อเจ้าของร้าน</p>}
-    <p className="pos-message" role="status" aria-live="polite" tabIndex={-1} ref={errorRef}>{message}</p>
-    {tab === 'history' ? <History storeId={store.id} accountName={accountName} onExpired={expired} /> : receipt ? <>
+    <div hidden={tab !== 'daily'}><DailyWorkspace me={me} scope={scope} storeName={store.name} accounts={accounts} initial={dailySeed} blocked={!!pending || seed.corrupt || busy || loading} loading={loading} allowed={store.role !== 'STAFF'} closed={closed} online={online} today={today} onExpired={expired} onWorkChange={setDailyWork} onHistory={() => setTab('history')} onReload={() => { setLoading(true); setAttempt(n => n + 1) }} /></div>
+    {tab !== 'daily' && <p className="pos-message" role="status" aria-live="polite" tabIndex={-1} ref={errorRef}>{message}</p>}
+    {tab === 'daily' ? null : tab === 'history' ? <History storeId={store.id} accountName={accountName} onExpired={expired} /> : receipt ? <>
       <h3 className="success-title">บันทึกขายแล้ว</h3><Receipt sale={receipt} accountName={accountName} /><button type="button" onClick={() => { setReceipt(null); setStep('items'); setMessage('') }}>ขายบิลใหม่</button>
     </> : <>
       {loading && <p role="status">กำลังอ่านเมนูและบัญชี…</p>}
@@ -153,7 +151,7 @@ export function PosWorkspace({ me, store, onExpired, onWorkChange }: { me: MeRes
         <ul className="bill-lines">{draft.items.map(i => <li key={i.product.id}><span>{i.product.name} × {i.quantity}</span><strong>{baht(BigInt(i.product.price) * BigInt(i.quantity))}</strong></li>)}</ul>
         <dl className="money-summary"><div><dt>ยอดสินค้า</dt><dd>{baht(money.gross)} บาท</dd></div><div><dt>ส่วนลด</dt><dd>{baht(money.discount)} บาท</dd></div><div className="net"><dt>ยอดชำระ</dt><dd>{baht(pending ? pending.request.payments.reduce((sum, p) => sum + BigInt(p.amount), 0n) : money.net)} บาท</dd></div></dl>
         {reviewedPayments.map(p => <div className="payment-summary" key={p.accountId}><strong>{accountName(p.accountId)} · {p.channel === 'CASH' ? 'เงินสด' : 'โอนเงิน'}</strong><p>รับสุทธิ {baht(p.amount)} บาท</p>{p.channel === 'CASH' && <p>รับมา {baht(p.tendered!)} · เงินทอน {baht(BigInt(p.tendered!) - BigInt(p.amount))} บาท</p>}</div>)}
-        <div className="actions"><button type="button" className="secondary-action" disabled={locked} onClick={() => setStep('pay')}>กลับแก้ไข</button><button type="button" disabled={busy || !online || seed.corrupt || (!pending && (closed || oldDate || !!changed))} onClick={() => void submit()}>{busy ? 'กำลังยืนยัน…' : pending ? 'ตรวจผลบิลเดิม' : `ยืนยันบันทึกขาย ${baht(money.net)} บาท`}</button></div>
+        <div className="actions"><button type="button" className="secondary-action" disabled={locked} onClick={() => setStep('pay')}>กลับแก้ไข</button><button type="button" disabled={busy || !online || seed.corrupt || (!pending && (dailyWork.pending || closed || oldDate || !!changed))} onClick={() => void submit()}>{busy ? 'กำลังยืนยัน…' : pending ? 'ตรวจผลบิลเดิม' : `ยืนยันบันทึกขาย ${baht(money.net)} บาท`}</button></div>
       </section>}
       {step === 'items' && <div className="checkout-bar"><span>รวม {draft.items.reduce((sum, i) => sum + i.quantity, 0)} ชิ้น<strong>{baht(money.net)} บาท</strong></span><button type="button" disabled={!draft.items.length || locked || loading || closed || oldDate || !accounts.length || !online} onClick={() => { setStep('pay'); setMessage('') }}>ไปชำระเงิน</button></div>}
       {moneyError && <p role="alert">{moneyError}</p>}
