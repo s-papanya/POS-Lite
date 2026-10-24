@@ -96,9 +96,9 @@ verify hash, rotate current session/revoke sessions อื่น tx; ไม่�
 | GET /stores/:storeId/business-days/:date | O/M/S | — → data:{id,businessDate,state,revision,openingSnapshots?} | implement; STAFF ไม่ได้รับ openingSnapshots; revision เป็น string |
 | POST /stores/:storeId/business-days | O/M | {businessDate} → data:{id,businessDate,state,revision,openingSnapshots} | implement; วันนี้ Bangkok เท่านั้น; ใหม่201/OPENเดิม200/replaystatusเดิม; CLOSED409; วันก่อนมีอยู่ปฏิเสธจน D4; auto-create sale รอ S2 |
 | POST /stores/:storeId/sales | O/M/S | ตัวอย่างด้านล่าง → data:sale | implement POS; คำนวณราคาเอง/เปิดวันอัตโนมัติใน tx เดียว; source+items+payments+ledger+audit+key; CLOSED409 |
-| GET /stores/:storeId/sales | O/M/S | from,to,limit?,cursor? → data:sales[],page:nextCursor | implement POS history; from/to บังคับ inclusive Bangkok ไม่เกิน366วัน; keyset occurred_at/id DESC; refund/reversal status รอ D3 |
+| GET /stores/:storeId/sales | O/M/S | from,to,limit?,cursor? → data:sales[],page:nextCursor | implement POS/SUPPLEMENTAL history; from/to บังคับ inclusive Bangkok ไม่เกิน366วัน; keyset occurred_at/id DESC; refund/reversal status รอ D3 |
 | GET /stores/:storeId/sales/:saleId | O/M/S | — → data:sale | implement immutable snapshots/payments; cross-store404; refund refs รอ D3 |
-| POST /stores/:storeId/supplemental-sales | O/M | businessDate,occurredAt,amount,payments,reason → sale kind SUPPLEMENTAL | amount>0; sum payments=amount; ledger เพิ่ม; CLOSED ปฏิเสธ |
+| POST /stores/:storeId/supplemental-sales | O/M | businessDate,occurredAt,amount,payments,reason → data:sale kind SUPPLEMENTAL | implement D1a; amount>0; sum payments=amount; ไม่มี items/discount; เปิดวันอัตโนมัติและ ledger/audit/key atomic; CLOSED409 |
 | POST /stores/:storeId/sales-reconciliations/preview | O/M | businessDate,targets[] → revision,lines,netSales,accountEffects | read snapshot เดียว; ไม่ post; CLOSED อ่านได้เพื่อแสดงผลแต่ confirm ไม่ได้ |
 | POST /stores/:storeId/sales-reconciliations | O/M | businessDate,occurredAt,expectedRevision,targets[],reason → record,createdSales,dayRevision | lock day/recompute; delta>=0 ทุก bucket; all-or-nothing; CLOSED ปฏิเสธ |
 | POST /stores/:storeId/sales/:saleId/refunds | O | businessDate,occurredAt,reason,payouts[] → refund,allocations,movements | lock current day+sale+accounts; full remaining only; คืนวัน OPEN แม้ sale เก่าปิดแล้ว; ไม่มีแก้ sale เดิม |
@@ -107,6 +107,14 @@ verify hash, rotate current session/revoke sessions อื่น tx; ไม่�
 | POST /stores/:storeId/cash-closings | O/M | businessDate,expectedRevision,counts[] → closing,version,state:CLOSED | lock day; count ทุกบัญชี; reason ถ้า variance; source snapshot+audit ไม่ post เงิน; CLOSED 409 เว้น replay key เดิม |
 | POST /stores/:storeId/cash-closings/:id/settlements | O | reason → settlements,movements | lock day/latest closing/accounts; CLOSED เท่านั้น; amount server จาก variance; unique line; ห้ามแก้เก่า |
 | POST /stores/:storeId/business-days/:date/reopen | O | reason,expectedRevision → OPEN,revision | lock day/accounts; no later day opened; reverse previous settlement explicit + audit; CLOSED เท่านั้น |
+
+Supplemental ใช้รูปแบบ payments เดียวกับ POS: CASH ต้อง tendered>=amount, TRANSFER ไม่รับ tendered/change
+reason ตัดช่องว่างหัวท้าย 1–1000 ตัวอักษร, amount เป็น money string บวกไม่เกิน9000000000000
+บัญชีไม่ซ้ำ/อยู่ร้าน/active/เปิดยอดตั้งต้นแล้ว; วันนี้ Bangkok และไม่อนาคตเท่านั้น
+header Origin/CSRF/Idempotency-Key บังคับ; expected identity headers ตาม S3 ใช้ได้กับทั้งสอง endpoint
+key เดิม/path หรือ payload ต่าง409; replay ตรวจสิทธิ์ O/M อีกครั้งก่อนคืน response เดิม
+response SUPPLEMENTAL มี reason/items:[]/discount:"0"/gross=net=amount และเลขอ้างอิง SUP-YYYYMMDD-NNNNNN
+POS response เดิมไม่มี reason; history/detail เพิ่มชนิด SUPPLEMENTAL โดยไม่แก้ snapshots ของ POS
 
 sale request (ตัวเลขตัวอย่างนี้เป็นสัญญาทดสอบ ไม่ใช่ข้อมูล production):
 

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { parseCookie } from "cookie";
 import { z } from "zod";
-import { businessDateSchema, saleRequestSchema } from "@pos-lite/validation";
+import { businessDateSchema, saleRequestSchema, supplementalSaleRequestSchema } from "@pos-lite/validation";
 import { AuthError, type AuthService } from "../auth/service.js";
 import { CatalogError } from "../catalog/service.js";
 import { SalesService } from "./service.js";
@@ -15,8 +15,10 @@ const cursorSchema=z.strictObject({storeId:id,from:businessDateSchema,to:busines
   occurredAt:z.iso.datetime({offset:true}),id});
 export function salesRouter(auth:AuthService) {
   const router=Router(); const service=new SalesService(auth.pool);
-  router.all(["/stores/:storeId/sales","/stores/:storeId/sales/:saleId"],async(req,res,next)=>{
+  router.all(["/stores/:storeId/sales","/stores/:storeId/sales/:saleId","/stores/:storeId/supplemental-sales"],async(req,res,next)=>{
     try {
+      const supplemental=req.path.endsWith("/supplemental-sales");
+      if(supplemental && req.method!=="POST") {next();return;}
       if(req.method!=="GET" && !(req.method==="POST" && !req.params.saleId)) {next();return;}
       const session=await auth.resolve(parseCookie(req.headers.cookie ?? "")[auth.config.production ? "__Host-session" : "pos_lite_session"]);
       if(!session?.user_id || !session.business_id) throw new AuthError(401,"AUTH_REQUIRED");
@@ -36,7 +38,8 @@ export function salesRouter(auth:AuthService) {
       auth.requireCsrf(session,req.get("X-CSRF-Token"));
       const expectedUser=req.get("X-Expected-User-Id"); const expectedBusiness=req.get("X-Expected-Business-Id");
       if((expectedUser || expectedBusiness) && (expectedUser!==actor.user_id || expectedBusiness!==actor.business_id)) throw new AuthError(403,"SESSION_CONTEXT_CHANGED");
-      const result=await service.create(actor,storeId,id.parse(req.get("Idempotency-Key")),saleRequestSchema.parse(req.body),String(res.getHeader("X-Request-Id")));
+      const input=supplemental ? supplementalSaleRequestSchema.parse(req.body) : saleRequestSchema.parse(req.body);
+      const result=await service.create(actor,storeId,id.parse(req.get("Idempotency-Key")),input,String(res.getHeader("X-Request-Id")));
       res.status(result.status).json(result.body);
     } catch(error) {
       const failure=error instanceof z.ZodError ? new AuthError(400,"INVALID_REQUEST") : error;

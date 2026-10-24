@@ -283,8 +283,16 @@ for option in SCHEMAS["PaymentInput"]["oneOf"]:
     if "tendered" in option["properties"]:
         option["properties"]["tendered"] = ref("PositiveMoney")
 SCHEMAS["SaleRequest"]["description"] = "Unique product IDs and payment account IDs. Server prices, exact payment sum, today Bangkok and no future occurredAt."
-SCHEMAS["SaleResponse"] = obj({"data": ref("PosSale")})
-SCHEMAS["SaleListResponse"] = obj({"data": {"type": "array", "items": ref("PosSale")},
+SCHEMAS["SupplementalSaleRequest"] = obj({"businessDate": ref("Date"), "occurredAt": ref("Time"),
+    "amount": ref("PositiveMoney"), "reason": {"type": "string", "minLength": 1, "maxLength": 1000}, "payments": array("PaymentInput", 1)})
+SCHEMAS["SupplementalSaleRequest"]["description"] = "Positive amount equals sum of unique explicit payment accounts. No items or discount; today Bangkok only."
+SCHEMAS["SupplementalSale"] = obj({**SCHEMAS["PosSale"]["properties"], "kind": {"type": "string", "const": "SUPPLEMENTAL"},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 1000}, "items": {"type": "array", "maxItems": 0}, "discount": {"const": "0"}})
+SCHEMAS["SaleRead"] = {"oneOf": [ref("PosSale"), ref("SupplementalSale")]}
+SCHEMAS["SaleResponse"] = obj({"data": ref("SaleRead")})
+SCHEMAS["PosSaleResponse"] = obj({"data": ref("PosSale")})
+SCHEMAS["SupplementalSaleResponse"] = obj({"data": ref("SupplementalSale")})
+SCHEMAS["SaleListResponse"] = obj({"data": {"type": "array", "items": ref("SaleRead")},
     "page": obj({"nextCursor": {"type": ["string", "null"]}})})
 sale_path = "/stores/{storeId}/sales"
 post = paths[sale_path]["post"]
@@ -293,7 +301,14 @@ for header in ["X-Expected-User-Id", "X-Expected-Business-Id"]:
     post["parameters"].append({"name": header, "in": "header", "required": False, "schema": ref("Id"),
         "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."})
 post["parameters"].append({"name": "Origin", "in": "header", "required": True, "schema": {"type": "string", "format": "uri"}})
-post["responses"]["201"]["content"]["application/json"]["schema"] = ref("SaleResponse")
+post["responses"]["201"]["content"]["application/json"]["schema"] = ref("PosSaleResponse")
+paths["/stores/{storeId}/supplemental-sales"] = {"post": {"operationId": "createSupplementalSale", "x-implemented": True,
+    "x-permissions": ["OWNER", "MANAGER"], "parameters": post["parameters"],
+    "requestBody": {"required": True, "content": {"application/json": {"schema": ref("SupplementalSaleRequest")}}},
+    "responses": {**{code: {"description": "Standard error; DAY_CLOSED, INVALID_SALE_TOTALS, ACCOUNT_CHANNEL_MISMATCH, INVALID_OCCURRED_AT, IDEMPOTENCY_CONFLICT or SESSION_CONTEXT_CHANGED",
+        "content": {"application/json": {"schema": ref("Error")}}} for code in ["400", "401", "403", "404", "409", "413", "422", "500"]},
+        "201": {"description": "Supplemental sale committed / original replay; atomic payments, ledger, audit and key",
+            "content": {"application/json": {"schema": ref("SupplementalSaleResponse")}}}}}}
 for path in [sale_path, sale_path + "/{saleId}"]:
     params = [{"name": "storeId", "in": "path", "required": True, "schema": ref("Id")}]
     if path.endswith("{saleId}"):
@@ -304,15 +319,15 @@ for path in [sale_path, sale_path + "/{saleId}"]:
         params += [{"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}},
                    {"name": "cursor", "in": "query", "schema": {"type": "string", "maxLength": 2048}}]
         response = "SaleListResponse"
-    responses = {"200": {"description": "Immutable POS bill snapshots; date range inclusive Asia/Bangkok, maximum 366 days",
+    responses = {"200": {"description": "Immutable POS and supplemental bills; date range inclusive Asia/Bangkok, maximum 366 days",
         "content": {"application/json": {"schema": ref(response)}}}}
     for code in ["400", "401", "403", "404", "500"]:
         responses[code] = {"description": "Standard error", "content": {"application/json": {"schema": ref("Error")}}}
     paths.setdefault(path, {})["get"] = {"operationId": "getSale" if path.endswith("{saleId}") else "listSales",
         "x-implemented": True, "x-permissions": ["OWNER", "MANAGER", "STAFF"], "parameters": params, "responses": responses}
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.7.0",
-    "description": "F1/F2, S1a-c and S2 POS sale/history implemented. Five reconciliation/refund/closing paths remain design only. See api-contracts.md."},
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.8.0",
+    "description": "F1/F2, S1a-c, S2 POS and D1a supplemental sale/history implemented. Five reconciliation/refund/closing paths remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

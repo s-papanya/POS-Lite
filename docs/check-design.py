@@ -65,7 +65,7 @@ for path, methods in doc["paths"].items():
         if path in {"/stores/{storeId}/products", "/stores/{storeId}/products/{productId}",
                     "/accounts", "/accounts/{accountId}", "/accounts/{accountId}/opening", "/stores/{storeId}/accounts",
                     "/stores/{storeId}/business-days", "/stores/{storeId}/business-days/{date}",
-                    "/stores/{storeId}/sales", "/stores/{storeId}/sales/{saleId}"}:
+                    "/stores/{storeId}/sales", "/stores/{storeId}/sales/{saleId}", "/stores/{storeId}/supplemental-sales"}:
             assert operation["x-implemented"] is True
             if method != "get":
                 assert {"X-CSRF-Token", "Origin", "Idempotency-Key"} <= headers

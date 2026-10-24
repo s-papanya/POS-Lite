@@ -65,12 +65,19 @@ export const saleRequestSchema=z.strictObject({businessDate:businessDateSchema,
     z.strictObject({accountId:resourceIdSchema,channel:z.literal("TRANSFER"),amount:positiveMoneySchema})])).min(1).max(100)})
   .refine((v)=>new Set(v.items.map((i)=>i.productId)).size===v.items.length && new Set(v.payments.map((p)=>p.accountId)).size===v.payments.length);
 export type SaleRequest = z.infer<typeof saleRequestSchema>;
-export const saleSchema=z.strictObject({id:z.uuid(),reference:z.string(),kind:z.literal("POS"),businessDate:businessDateSchema,
+export const supplementalSaleRequestSchema=z.strictObject({businessDate:businessDateSchema,
+  occurredAt:saleRequestSchema.shape.occurredAt,amount:positiveMoneySchema,reason:z.string().trim().min(1).max(1000),
+  payments:saleRequestSchema.shape.payments}).refine((v)=>new Set(v.payments.map((p)=>p.accountId)).size===v.payments.length);
+export type SupplementalSaleRequest = z.infer<typeof supplementalSaleRequestSchema>;
+const posSaleSchema=z.strictObject({id:z.uuid(),reference:z.string(),kind:z.literal("POS"),businessDate:businessDateSchema,
   occurredAt:z.iso.datetime({offset:true}),gross:positiveMoneySchema,discount:nonnegativeMoneySchema,net:positiveMoneySchema,
   dayRevision:z.string().regex(/^[0-9]+$/),items:z.array(z.strictObject({productId:z.uuid(),nameSnapshot:z.string(),unitPrice:positiveMoneySchema,
-    productVersion:z.number().int().positive(),quantity:z.number().int().min(1).max(999),lineTotal:positiveMoneySchema})),
+    productVersion:z.number().int().positive(),quantity:z.number().int().min(1).max(999),lineTotal:positiveMoneySchema})).min(1).max(100),
   payments:z.array(z.strictObject({id:z.uuid(),accountId:z.uuid(),channel:z.enum(["CASH","TRANSFER"]),amount:positiveMoneySchema,
-    tendered:nonnegativeMoneySchema.nullable(),change:nonnegativeMoneySchema.nullable()}))});
+    tendered:nonnegativeMoneySchema.nullable(),change:nonnegativeMoneySchema.nullable()})).min(1).max(100)});
+export const supplementalSaleSchema=posSaleSchema.extend({kind:z.literal("SUPPLEMENTAL"),reason:z.string().min(1).max(1000),
+  items:z.array(z.never()).max(0),discount:z.literal("0")});
+export const saleSchema=z.discriminatedUnion("kind",[posSaleSchema,supplementalSaleSchema]);
 export const saleResponseSchema=z.strictObject({data:saleSchema});
 export const saleListResponseSchema=z.strictObject({data:z.array(saleSchema),page:z.strictObject({nextCursor:z.string().nullable()})});
 export const openBusinessDaySchema = z.strictObject({businessDate:businessDateSchema});

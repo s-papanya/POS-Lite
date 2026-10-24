@@ -17,7 +17,7 @@ export interface FinancialAccount { id:string; name:string; type:"CASH" | "BANK"
 export interface AccountOpening { id:string; accountId:string; storeId:string; amount:string; cutoverAt:string; reason:string }
 export interface SaleItem {productId:string;nameSnapshot:string;unitPrice:string;productVersion:number;quantity:number;lineTotal:string}
 export interface SalePayment {id:string;accountId:string;channel:"CASH" | "TRANSFER";amount:string;tendered:string | null;change:string | null}
-export interface Sale {id:string;reference:string;kind:"POS";businessDate:string;occurredAt:string;gross:string;discount:string;net:string;
-  dayRevision:string;items:SaleItem[];payments:SalePayment[]}
+export interface Sale {id:string;reference:string;kind:"POS" | "SUPPLEMENTAL";businessDate:string;occurredAt:string;gross:string;discount:string;net:string;
+  dayRevision:string;items:SaleItem[];payments:SalePayment[];reason?:string}
 export type BusinessDay = {id:string;businessDate:string;state:"OPEN" | "CLOSED";revision:string;
   openingSnapshots?:{accountId:string;amount:string}[]};
