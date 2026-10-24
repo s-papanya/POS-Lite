@@ -30,6 +30,7 @@ Thumbs.db
 
 # Temporary project work (keep shared agent instructions and skills tracked)
 /.tmp/
+/.impeccable/review/
 /.skill-work/
 /.skill-drafts/
 /.skill-validation-deps/
