@@ -9,7 +9,9 @@ S1b บัญชี/ledger opening implement แล้ว ดู [accounts-valid
 S1c เปิดวันแรก/day opening snapshots implement แล้ว ดู [business-days-validation.md](business-days-validation.md)
 S2 API ธุรกรรม POS/ประวัติ implement แล้ว ดู [sales-validation.md](sales-validation.md)
 S3 หน้าขาย implement และตรวจ browser fixture แล้ว ดู [pos-validation.md](pos-validation.md)
-ยังรอตรวจ Android เครื่องจริงก่อนปิด M2; งานพัฒนาถัดไป D1 เพิ่มยอด/กระทบยอด
+ยังรอตรวจ Android เครื่องจริงก่อนปิด M2
+D1a API เพิ่มยอด implement แล้ว ดู [supplemental-sales-validation.md](supplemental-sales-validation.md)
+งานพัฒนาถัดไป D1b preview/confirm กระทบยอด และ D1c หน้ากรอกสอง flow ให้แยกความหมายชัดเจน
 วันถัดไปยัง fail closed จนมีหลักฐานปิดวัน/settlement ใน D4
 ติดตามสถานะและเกณฑ์ปิดช่วงงานใน [milestones.md](milestones.md)
 
