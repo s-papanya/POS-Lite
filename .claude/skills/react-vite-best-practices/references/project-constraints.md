@@ -3,12 +3,12 @@
 Relative links below resolve from this reference.
 See [current state](../../../../docs/project-engineering.md) and [UX](../../../../docs/ux-flows.md).
 
-Current UI is a starter with no router, Tailwind, auth, component library or financial pages.
-Do not add any of them as a side effect of performance review.
+Current React/Vite UI includes cookie auth, store selection and POS/payment/review/receipt/history.
+There is no router, Tailwind or component library; do not add these as a side effect of performance review.
 White/navy Thai mobile UI needs readable18px text,48px targets and stable drafts, not screenshot-only optimization.
 Keep the primary selling workflow fast; lazy-load heavy history/report/export screens when implemented and justified.
 
-Auth plan: HttpOnly same-origin session cookie with CSRF. No localStorage token or unconditional request replay.
+Auth uses an HttpOnly same-origin session cookie with CSRF. No localStorage token or unconditional request replay.
 Financial DTOs use satang strings, not Number; unknown commit outcome retains original key/payload/identity.
 
 Treat upstream snippets not replaced locally as contextual examples, not required configs.

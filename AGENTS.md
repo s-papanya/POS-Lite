@@ -36,6 +36,10 @@ Family Store Manager สำหรับร้านก๋วยเตี๋ย�
 และ architecture; เพิ่ม test-validation เมื่อเขียนหรือพิสูจน์ tests ไม่ต้องเปิดทุก skill เผื่อไว้
 React/Vite performance skill ไม่จำเป็นกับทุก React edit และ code-review ไม่บังคับ full audit ทุก wording change
 
+เมื่อเปลี่ยน tooling, API contracts, transaction patterns หรือวิธีตรวจงาน ให้ตรวจ skills ที่เกี่ยวข้องและปรับคำแนะนำที่ล้าสมัยในงานเดียวกัน
+เก็บสถานะฟีเจอร์/ผลรันไว้ใน project docs; skills เก็บวิธีทำงานและข้อควรระวังที่ใช้ต่อได้ ไม่คัดลอก changelog ทุกครั้ง
+ตรวจสำเนา `.claude/skills` ให้ตรงกับ canonical และแยก commit ของ skills จากฟีเจอร์เมื่อเหมาะสม
+
 ## เอกสารหลักและข้อจำกัด
 
 - [API contracts](docs/api-contracts.md), [data model/ERD](docs/data-model.md),

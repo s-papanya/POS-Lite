@@ -7,7 +7,11 @@ description: Design, implement or review POS-Lite Thai mobile interfaces, tokens
 
 Read affected [UX flows](../../../docs/ux-flows.md) and [requirements](../../../docs/product-requirements.md).
 Inspect existing UI/CSS/components, then [design defaults](references/design-system.md) when styling.
-Current UI is Vite starter; Tailwind/product components/tokens are not yet implemented.
+Current UI has cookie login/store selection, POS basket/payment/review/receipt/history and white/navy CSS tokens.
+Reuse apps/web/src/pos, api.ts and existing CSS; Tailwind and a component library are not installed.
+Receipt/history distinguish POS, SUPPLEMENTAL and RECONCILIATION; preserve Thai action meanings and reasons.
+Pending checkout lives in sessionStorage by user/business/store and retries only the original key/request
+on explicit action after identity checks. Do not replace it with localStorage auth or automatic replay.
 Reuse existing components. Don't install UI/router/chart/icon libraries or replace the stack merely to match a comp.
 
 ## Task before screen

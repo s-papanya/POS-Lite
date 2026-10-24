@@ -8,7 +8,8 @@ description: Design or implement POS-Lite REST contracts, validation, authorizat
 Read affected [API contracts](../../../docs/api-contracts.md), [domain rules](../../../docs/domain-rules.md)
 and [project state](../../../docs/project-engineering.md). REST /api/v1 on Express is chosen;
 don't switch to GraphQL/JWT to follow a template.
-OpenAPI core covers six specified financial paths, not six implemented endpoints.
+OpenAPI contains implemented and design-only operations. Read x-implemented and current API contracts;
+do not infer implementation from a path appearing in OpenAPI.
 Health is the current scaffold exception to the business envelope; don't rewrite it during unrelated work.
 
 ## Contract
@@ -28,7 +29,7 @@ Health is the current scaffold exception to the business envelope; don't rewrite
 
 ## Auth and money writes
 
-Planned auth: server-side session, HttpOnly cookie, production Secure/SameSite=Lax,
+Implemented auth: PostgreSQL session, HttpOnly cookie, production Secure/SameSite=Lax,
 X-CSRF-Token synchronizer plus Origin checks. No Bearer/localStorage session token by default.
 Use same-origin /api/v1 with appropriate cookie/CSRF handling.
 Check permissions on every request, including idempotent replay after role change.
@@ -40,6 +41,12 @@ Preview reads a consistent snapshot; confirm checks expectedRevision/recomputes 
 Use trusted catalog/version; PRICE_CHANGED409 must allow explicit user re-confirmation.
 One service transaction writes source/payment/movement/audit/idempotency.
 Specify CLOSED-day policy and explicit settlement/reopen/current-day refund exceptions.
+Sales/reconciliation accept paired X-Expected-User-Id/X-Expected-Business-Id headers; mismatch403
+SESSION_CONTEXT_CHANGED before key claim. They supplement cookie auth, never replace it.
+Reconciliation targets are explicit unique accounts and signed satang strings. Omitted buckets stay untouched;
+negative delta previews carry requiresReview and no accountEffects, then confirm409. A missing day previews
+as revision0 without opening it; CLOSED previews are readable but confirm rejects. Positive lines create
+separate REC bills; dayRevision advances per generated sale, or once for zero-only NO_CHANGE.
 
 For each changed operation specify permission/request/response/constraints/errors/idempotency,
 transaction boundary, sales/money effects and closed-day behavior.

@@ -23,8 +23,7 @@ without a real substitution or boundary need.
 
 Web features can grow under apps/web/src/features/<domain>/, reusable UI in components/, transport in lib/.
 Keep workflow state near its feature; no global store/router/query packages just to complete a template.
-packages/shared (money/error/DTO types) and packages/validation (Zod/contracts) are planned, not present:
-create with real consumers/workspace wiring. Browser must not import DB/config/secrets.
+packages/shared contains DTOs and packages/validation contains strict Zod contracts; both have real API/web consumers. Browser must not import DB/config/secrets.
 infra/ grows with real infrastructure; no speculative inventory/production tables or modules.
 
 ## Atomic money-write flow
@@ -36,7 +35,13 @@ Use domain-rules.md for exceptions such as CLOSED-day settlement and cross-store
 Client disabled buttons and in-memory mutexes do not protect multiple processes.
 No independent ledger POST that double-posts a sale. Use composite tenant/store FKs and typed source references.
 Money stays integer satang; old bill name/price snapshots remain immutable; refund posts on current open day.
-These remain target behavior until implemented and verified.
+SalesService.create owns POS/supplemental idempotency and transaction. postToDay joins the caller-owned
+transaction for reconciliation; it must not open a second transaction or commit independently. Its caller must
+lock/validate the day and, for multi-bucket work, lock all accounts in ID order before posting.
+Reconciliation preview uses a REPEATABLE READ READ ONLY transaction; confirm claims the key, locks the day,
+checks revision and recomputes. Positive lines create RECONCILIATION sales; zero-only records increment revision
+without sales/movements. Current aggregates cover existing sale payments; D3 must add original-payment
+refund/reversal allocations to both the query and DB guard before those sources can ship.
 
 Before restructuring identify consumers, dependency direction, transaction/contract/migration impact.
 Preserve callers or provide a contained migration. Update affected docs and verify workflows;

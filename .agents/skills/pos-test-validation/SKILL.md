@@ -6,25 +6,28 @@ description: Design, implement, or audit POS-Lite unit and PostgreSQL integratio
 # POS-Lite test validation
 
 Read [project state](../../../docs/project-engineering.md) and the affected [acceptance A–P](../../../docs/acceptance-scenarios.md).
-Inspect package.json/test configs before choosing commands. Current API test is a failing placeholder.
-Vitest/Supertest/PostgreSQL are the selected plan, not an installed suite. Do not introduce Jest, PyTest, Cypress
+Inspect root scripts and vitest.config.ts/vitest.db.config.ts before choosing commands.
+Vitest/Supertest and real PostgreSQL integration are installed; npm test and npm run test:db are separate. Do not introduce Jest, PyTest, Cypress
 or a second runner just because a generic example uses them. Python design checks are documentation checks.
 
 ## Select the level
 
 - Unit: pure money/discount rounding, Bangkok date classification, schema validation, permission decisions.
-  Use Vitest describe/it, arrange/act/assert and English behavior names. Proposed location: colocated `*.test.ts`.
+  Use Vitest describe/it, arrange/act/assert and English behavior names. Current locations: apps/api/test/*.test.ts and apps/web/test/*.test.ts.
   Use BigInt satang internally and exact money strings at HTTP boundaries.
 - API integration: Supertest against the exported Express app, real PostgreSQL migrated from scratch,
-  authenticated cookie/CSRF flow and realistic memberships. Proposed location:
-  `apps/api/test/integration/*.integration.test.ts`.
+  authenticated cookie/CSRF flow and realistic memberships. Current entry: apps/api/test/database.integration.ts with business-days/sales/supplemental/reconciliation check modules.
 - DB integration: actual composite FK/check/unique/deferred constraints, rollback, persisted idempotency,
   competing connections and row locks. SQLite/mocked repositories cannot prove these properties.
 - UI: use installed component/browser tooling when present; React Testing Library with Vitest is a future candidate,
   not installed today. Test Thai user-visible behavior, labels and pending states; Android manual evidence is separate.
   Don't install an E2E framework for an unrelated fix.
 
-For first test-infrastructure work, add a real runner/config/script within requested scope.
+The DB harness verifies local admin identity and a generated disposable database ownership nonce before cleanup.
+Keep that safety check; never redirect it to arbitrary DATABASE_URL. Browser fixture preview-server.mjs is simulated,
+not PostgreSQL evidence. A server-rendered receipt test does not prove Android/keyboard usability.
+Reconciliation races use held row locks + pg_blocking_pids barriers, not timing sleeps; test stale revision,
+NO_CHANGE audit/revision without movements, omitted buckets, multi-bucket rollback and replay after permission changes.
 Never replace missing tests with a successful placeholder or claim an absent command passed.
 
 ## Fixtures and mocks

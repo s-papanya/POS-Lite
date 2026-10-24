@@ -1,6 +1,6 @@
 # Project skills และผล review
 
-วันที่ 22 ตุลาคม 2026 — งานนี้สร้างคำแนะนำสำหรับ agent ไม่ได้เพิ่ม test runner, CI, DB หรือหน้าจอแอป
+ส่วนต้นเป็นประวัติวันที่ 22 ตุลาคม 2026; การอัปเดตตามระบบปัจจุบันอยู่ท้ายเอกสาร
 
 ## Skills เฉพาะโปรเจกต์
 
@@ -81,3 +81,19 @@ rules ที่ยังคง upstream examples มีคำเตือนใ�
 
 ไม่พบ material issues ใน behavioral pass ของ 3 skills ที่ประเมิน แต่ไม่ได้ทดสอบความสามารถครบทุกโจทย์ของทุก skill
 ไม่ได้รัน application/DB/Android tests หรือ deployment และไม่ได้ benchmark React/Vite ในงานนี้
+
+## อัปเดตตามระบบจริง — 25 ตุลาคม 2026
+
+เจ้าของให้ดูแล skills เมื่อเปลี่ยนโปรเจกต์ จึงเพิ่มขั้นตอน maintenance ใน root AGENTS.md
+แก้ข้อความก่อนF1ที่ล้าสมัยใน test-validation, architecture, api-design, db-migrations, frontend-design,
+cicd และ React/Vite project-constraints reference: runner/schema/migration/build/auth/POSมีจริงแล้ว
+CI/production topology/Tailwind/React Testing Libraryยังไม่มี ไม่เปลี่ยนสิ่งเหล่านี้เป็นคำอ้างว่าimplementแล้ว
+
+เพิ่มรูปแบบที่ต้องใช้ต่อ: caller-owned postToDay transaction, day/account lock order, preview read-only snapshot,
+expected identity headers, revision/recompute/NO_CHANGE, signed/omitted buckets และD3 allocation aggregate gap
+สถานะฟีเจอร์และผลรันอยู่ใน project docs; skillsไม่คัดลอกchangelogหรือจำนวนtestsที่เปลี่ยนทุกครั้ง
+อัปเดตcanonical `.agents/skills` และสำเนาเดิม `.claude/skills` โดยไม่สร้างskill routerอีกชุด
+
+ใช้ skill-creator quick_validate ผ่าน10 skills; canonical/mirror48ไฟล์ตรงกันทุกbyte และลิงก์local74รายการผ่าน
+validatorต้องPyYAMLซึ่งติดตั้งชั่วคราวใต้ `.tmp/skill-validator` ที่ignoreแล้ว ไม่แก้app dependencies/lockfile
+ไม่ได้ทำindependent behavioral forward-testซ้ำสำหรับการปรับคำแนะนำชุดนี้

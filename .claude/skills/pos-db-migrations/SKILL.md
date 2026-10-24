@@ -7,8 +7,13 @@ description: Design, create or review safe PostgreSQL schema migrations and back
 
 Read [data model](../../../docs/data-model.md), [domain rules](../../../docs/domain-rules.md)
 and [tooling state](../../../docs/project-engineering.md).
-PostgreSQL/Drizzle is selected, but no migration runner/schema exists yet.
-Don't generate Prisma/TypeORM/Alembic files or claim db:migrate ran without actual tooling.
+PostgreSQL/Drizzle schema and runner exist in apps/api/src/db and apps/api/drizzle.
+Use npm run db:generate and review SQL plus meta snapshot/journal; do not introduce another migration framework.
+The local db:migrate CLI verifies development host/DB/user and applied checksums, serializes migration execution
+and bounds locks/statements. Trigger functions and grantRuntimeAccess are maintained explicitly, not generated
+from Drizzle table definitions. New immutable sources get SELECT/INSERT only for the runtime role.
+Reconciliation guards validate header/line scope, recorded amounts, deltas and linked RECONCILIATION sales;
+when D3 adds refunds/reversals, update both service aggregates and the guard together.
 Inspect schema/history/runner version before choosing commands/paths.
 
 ## Data and compatibility
