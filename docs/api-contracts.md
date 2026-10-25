@@ -2,7 +2,8 @@
 
 Base `/api/v1`; JSON UTF-8; UUID identifiers; amount เป็น integer string หน่วยสตางค์
 D2a implement GET/POST `/expense-categories` แล้ว ดู [ผลตรวจหมวดรายจ่าย](expense-categories-validation.md)
-D2b implement POST/GET `/stores/:storeId/expenses` และ POST `/stores/:storeId/expenses/:id/payments` แล้ว ดู [ผลตรวจรายจ่าย](expenses-validation.md); owner/transfer ยังไม่ implement
+D2b implement POST/GET `/stores/:storeId/expenses` และ POST `/stores/:storeId/expenses/:id/payments` แล้ว ดู [ผลตรวจรายจ่าย](expenses-validation.md)
+D2c1 implement POST `/stores/:storeId/owner-transactions` แล้ว ดู [ผลตรวจเงินเจ้าของ](owner-transactions-validation.md); transfer ยังไม่ implement
 S2 implement POST/GET /stores/:storeId/sales และ GET /stores/:storeId/sales/:saleId แล้ว ดู [sales-validation.md](sales-validation.md)
 day revision/expectedRevision เป็น nonnegative integer string รองรับ PostgreSQL BIGINT โดยไม่เสีย precision; product version ยังเป็น integer
 F1 health และ F2 `/auth/*`, `/me`, GET `/stores`, GET `/stores/:storeId` implement แล้ว
@@ -162,7 +163,7 @@ closing count `{accountId,counted,reason?}`; expected/variance server คำน�
 | POST /stores/:storeId/expenses | O/M | businessDate,occurredAt,categoryId,amount,description,evidenceReference?,payment? → expense | implement D2b; payment?={accountId}; ถ้ามีจ่ายเต็ม tx เดียว; ไม่มีเงินไม่ลด; CLOSED ปฏิเสธ |
 | GET /stores/:storeId/expenses | O/M | from,to,status?,limit?,cursor? → expenses,page | implement D2b; status ALL(default)/PAID/UNPAID derive payment; reversal ยังรอ D3 |
 | POST /stores/:storeId/expenses/:id/payments | O/M | businessDate,occurredAt,accountId → payment | implement D2b; amount server จาก expense; lock expense; ALREADY_PAID 409; วัน expense ปิดได้แต่วัน payment ต้อง OPEN |
-| POST /stores/:storeId/owner-transactions | O | businessDate,occurredAt,accountId,kind,amount,note → transaction | source+movement; kind contribution/withdrawal; CLOSED ปฏิเสธ |
+| POST /stores/:storeId/owner-transactions | O | businessDate,occurredAt,accountId,kind,amount,note → transaction | implement D2c1; kind CONTRIBUTION/WITHDRAWAL, amount บวก, note1–1000; source+movement+audit+key atomic; CLOSED ปฏิเสธ |
 | POST /account-transfers | O หรือ M ตาม matrix | sourceStoreId,destinationStoreId,businessDate,occurredAt,sourceAccountId,destinationAccountId,amount,feeAmount?,reason → transfer,feeExpense? | tx ล็อกสองวัน+บัญชี; วันทั้งสอง OPEN; fee>=0 แยกหมวดค่าธรรมเนียม; ห้ามบัญชีเดิม |
 | GET /stores/:storeId/history | O/M | from,to,kind,cursor → transactions | รวม sales/expenses/owner/transfer/refund/close/reversal; S ใช้ sale history |
 | GET /stores/:storeId/reports/daily | O/M | from,to → sales,refunds,expensesRecognized,expensePaid,ownerFlows,transferFlows,variance | แยก actual cash flows/attributed sales; วันปิดอ่านได้ |
@@ -179,6 +180,11 @@ expense response `{id,categoryId,businessDate,occurredAt,amount,description,evid
 payment `{id,expenseId,accountId,businessDate,occurredAt,amount}`; client ไม่ส่ง amount ใน payment
 revision เพิ่ม1ต่อ create หรือ pay action รวมจ่ายทันที; key replay คืน body เดิม เช่น creation ยังคง UNPAID แม้จ่ายแล้ว ให้ GET อ่านสถานะล่าสุด
 รองรับ paired expected identity headers เช่น sales; ไม่มี UI รายจ่าย/reversal ในก้อนนี้ และ gate เปิดวันถัดไปยังรอ D4
+
+D2c1: owner response `{id,accountId,businessDate,occurredAt,kind,amount,note}`; kind กำหนด delta, ไม่รับ delta/business/actor จาก client
+OWNER เท่านั้น แม้ MANAGER มีสิทธิ์ใช้บัญชีร้านก็เติมทุน/ถอนไม่ได้; ตรวจซ้ำหลัง key/account waits ก่อน post/replay
+วัน/เวลาปัจจุบัน Bangkok OPEN, account active/mapped/cutover แล้ว; withdrawal เงินไม่พอ409 `INSUFFICIENT_FUNDS`, เหลือ0ได้
+revision+1ต่อ action; เติมทุนไม่ใช่ยอดขาย ถอนใช้ส่วนตัวไม่ใช่รายจ่าย; ไม่มี GET history/รายงานรวม/ย้อนรายการในก้อนนี้
 
 ## ตรวจสัญญากับ implementation
 

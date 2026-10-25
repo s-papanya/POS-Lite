@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Family Store Manager core design contract",
-    "version": "0.11.0",
-    "description": "F1/F2, S1a-c, S2, D1a-b and D2a-b expenses implemented. Owner/transfer, refund/closing remain design only. See api-contracts.md."
+    "version": "0.12.0",
+    "description": "F1/F2, S1a-c, S2, D1a-b, D2a-b and D2c1 owner flows implemented. Transfer, refund/closing remain design only. See api-contracts.md."
   },
   "servers": [
     {
@@ -4238,6 +4238,171 @@
           }
         }
       }
+    },
+    "/stores/{storeId}/owner-transactions": {
+      "post": {
+        "operationId": "createOwnerTransaction",
+        "x-implemented": true,
+        "x-permissions": [
+          "OWNER"
+        ],
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-Expected-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
+            "name": "X-Expected-Business-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Committed owner source or original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerTransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "OWNER only; positive satang amount, signed ledger effect derived from kind. Current Bangkok OPEN day, active mapped/opened account and no overdraft. Source/movement/audit/key atomic; revision+1. Does not change sales or operating expenses. No generic history or reversal endpoint yet."
+      }
     }
   },
   "components": {
@@ -6493,6 +6658,94 @@
         "required": [
           "data",
           "page"
+        ]
+      },
+      "OwnerTransactionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "CONTRIBUTION",
+              "WITHDRAWAL"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/ExpenseAmount"
+          },
+          "note": {
+            "$ref": "#/components/schemas/Text"
+          }
+        },
+        "required": [
+          "businessDate",
+          "occurredAt",
+          "accountId",
+          "kind",
+          "amount",
+          "note"
+        ]
+      },
+      "OwnerTransaction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "CONTRIBUTION",
+              "WITHDRAWAL"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/ExpenseAmount"
+          },
+          "note": {
+            "$ref": "#/components/schemas/Text"
+          }
+        },
+        "required": [
+          "id",
+          "businessDate",
+          "occurredAt",
+          "accountId",
+          "kind",
+          "amount",
+          "note"
+        ]
+      },
+      "OwnerTransactionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OwnerTransaction"
+          }
+        },
+        "required": [
+          "data"
         ]
       }
     }

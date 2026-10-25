@@ -10,15 +10,16 @@ D1a API เพิ่มยอด SUPPLEMENTAL/reason และ history เพิ
 D1b API กระทบยอด preview/confirm เพิ่มแล้ว ดู [reconciliation-validation.md](reconciliation-validation.md)
 D1c หน้ากรอกเพิ่มยอด/ตรวจยอดทั้งวันเพิ่มแล้ว ดู [daily-ui-validation.md](daily-ui-validation.md); Android จริงยังรอตรวจ
 D2a หมวดรายจ่าย GET/POST เพิ่มแล้ว ดู [expense-categories-validation.md](expense-categories-validation.md)
-D2b API รายจ่าย/จ่ายเต็มและ debit ledger เพิ่มแล้ว ดู [expenses-validation.md](expenses-validation.md); owner/transfer/UI เงินออกยังเป็นแผน
+D2b API รายจ่าย/จ่ายเต็มและ debit ledger เพิ่มแล้ว ดู [expenses-validation.md](expenses-validation.md)
+D2c1 API เติมทุน/ถอน OWNER เพิ่มแล้ว ดู [owner-transactions-validation.md](owner-transactions-validation.md); transfer/UI เงินออกยังเป็นแผน
 skills อยู่ใน `.agents/skills` ใช้เฉพาะประเภทงานที่เกี่ยวข้อง ไม่โหลดทุก skill ทุกครั้ง
 ตรวจ package/config และผลรันใหม่ก่อนอ้างสถานะ หากโค้ดต่างจากกฎธุรกิจที่ตกลงให้รายงาน gap ไม่แก้กฎตาม bug
 
-## หลักฐานปัจจุบัน — 25 ตุลาคม 2026
+## หลักฐานปัจจุบัน — 26 ตุลาคม 2026
 
 | เรื่อง | มีจริง | แผนที่ยังไม่ implement |
 |---|---|---|
-| Runtime | React/Vite/TypeScript, Express, Zod, Pino, pg/Drizzle, Argon2id; auth/catalog/accounts/เปิดวัน/POS+supplemental/reconciliation/history/expenses/credit+expense debit ledger | ปิดวัน/settlement/owner/transfer/refund |
+| Runtime | React/Vite/TypeScript, Express, Zod, Pino, pg/Drizzle, Argon2id; auth/catalog/accounts/เปิดวัน/POS+supplemental/reconciliation/history/expenses/owner/typed credit+debit ledger | ปิดวัน/settlement/transfer/refund |
 | Tests | Vitest5/Supertest; pure BigInt money และ PostgreSQL auth/sales/constraints/rollback/lock integration | acceptance A–P ทุก module และ Android |
 | CI/CD | ยังไม่มี workflows หรือ deployment manifests | CI, staging/production pipeline, backup/restore |
 | Lint | Root ESLint สำหรับ API/tests/packages; เว็บ Hooks/Fast Refresh; root build/typecheck/lint/test | CI quality gates |
@@ -40,7 +41,7 @@ npm run build
 F1 ใช้ root lockfile เดียวและ build explicit ทุก workspace; API start ต้องมี dist จาก build ก่อน
 shared packages มี consumer จริง: API ใช้ DTOs และเว็บ/API tests ใช้ Zod contracts
 ไม่รัน npm ci ซ้ำเพื่อแก้ docs/skills และห้าม noop เพื่อให้ checks เขียว
-skills อัปเดตตามระบบจริงแล้ววันที่25ตุลาคม2026; ข้อความก่อนF1ในเอกสารประวัติเป็น historical snapshot
+skills อัปเดตตามระบบจริงแล้ววันที่26ตุลาคม2026; ข้อความก่อนF1ในเอกสารประวัติเป็น historical snapshot
 สถานะจริงในเอกสารนี้และโค้ด/config ล่าสุดมีลำดับก่อนข้อความ snapshot เหล่านั้น
 Python design checks ไม่ใช่ application tests; [ผลตรวจ F1](foundation-validation.md) แยกจาก business A–P ที่ยังไม่รัน
 

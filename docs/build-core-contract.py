@@ -401,8 +401,22 @@ for path, method, operation_id, request_schema, response_schema in [
         operation["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref(request_schema)}}}
     paths.setdefault(path, {})[method] = operation
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.11.0",
-    "description": "F1/F2, S1a-c, S2, D1a-b and D2a-b expenses implemented. Owner/transfer, refund/closing remain design only. See api-contracts.md."},
+SCHEMAS["OwnerTransactionRequest"] = obj({"businessDate": ref("Date"), "occurredAt": ref("Time"), "accountId": ref("Id"),
+    "kind": {"type": "string", "enum": ["CONTRIBUTION", "WITHDRAWAL"]}, "amount": ref("ExpenseAmount"), "note": ref("Text")})
+SCHEMAS["OwnerTransaction"] = obj({"id": ref("Id"), **SCHEMAS["OwnerTransactionRequest"]["properties"]})
+SCHEMAS["OwnerTransactionResponse"] = obj({"data": ref("OwnerTransaction")})
+responses = {"201": {"description": "Committed owner source or original replay", "content": {"application/json": {"schema": ref("OwnerTransactionResponse")}}}}
+for code in ["400", "401", "403", "404", "409", "413", "422", "500"]:
+    responses[code] = {"description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+        "content": {"application/json": {"schema": ref("Error")}}}
+paths["/stores/{storeId}/owner-transactions"] = {"post": {"operationId": "createOwnerTransaction", "x-implemented": True, "x-permissions": ["OWNER"],
+    "parameters": [{"name": "storeId", "in": "path", "required": True, "schema": ref("Id")}] +
+        [p for p in post["parameters"] if p["name"] in ["Origin", "X-CSRF-Token", "Idempotency-Key", "X-Expected-User-Id", "X-Expected-Business-Id"]],
+    "requestBody": {"required": True, "content": {"application/json": {"schema": ref("OwnerTransactionRequest")}}}, "responses": responses,
+    "description": "OWNER only; positive satang amount, signed ledger effect derived from kind. Current Bangkok OPEN day, active mapped/opened account and no overdraft. Source/movement/audit/key atomic; revision+1. Does not change sales or operating expenses. No generic history or reversal endpoint yet."}}
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.12.0",
+    "description": "F1/F2, S1a-c, S2, D1a-b, D2a-b and D2c1 owner flows implemented. Transfer, refund/closing remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

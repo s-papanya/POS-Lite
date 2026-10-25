@@ -15,7 +15,8 @@ D1b preview/confirm กระทบยอด implement แล้ว ดู [reco
 D1c หน้ากรอกสอง flow implement และตรวจ browser fixture แล้ว ดู [daily-ui-validation.md](daily-ui-validation.md)
 D2a API หมวดรายจ่าย implement แล้ว ดู [expense-categories-validation.md](expense-categories-validation.md)
 D2b API รายจ่ายค้างจ่าย/จ่ายทันที/ชำระเต็ม implement แล้ว ดู [expenses-validation.md](expenses-validation.md)
-งานพัฒนาถัดไป D2c เงินเจ้าของ/โอนและ fee จากนั้น UI เงินออก; ยังรอ Android จริงและตรวจหลังคืนเงินเมื่อมี D3
+D2c1 API เติมทุน/ถอนเงินเจ้าของ implement แล้ว ดู [owner-transactions-validation.md](owner-transactions-validation.md)
+งานพัฒนาถัดไป D2c2 โอนและ fee จากนั้น UI เงินออก; ยังรอ Android จริงและตรวจหลังคืนเงินเมื่อมี D3
 วันถัดไปยัง fail closed จนมีหลักฐานปิดวัน/settlement ใน D4
 ติดตามสถานะและเกณฑ์ปิดช่วงงานใน [milestones.md](milestones.md)
 
