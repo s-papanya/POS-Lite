@@ -54,6 +54,12 @@ Map the change to A–P and add the smallest useful regression test. For new mon
 replay after lost response, changed-payload conflict, wrong-store denial, CLOSED-day denial, consistent source/ledger
 and rollback. For reconciliation/closing/refund, use deterministic barriers on separate connections to exercise
 both lock orders; no sleep-based races. Assert final balances, row counts, IDs and references rather than private call order.
+Account lock queues can block the second waiter behind the first, not directly behind the test blocker;
+follow the transitive pg_blocking_pids graph and require both requests to wait before releasing the barrier.
+For expense debits test unpaid/no movement, immediate and later-payment audit failures, same-debt races,
+shared-bank no-overdraft and direct SQL guards. Immutable source row locks must work while id=id rewrites fail.
+Historical closed-day fixtures may be manufactured only by the disposable DB admin and must restore guards;
+they do not prove the application can bypass the separate D4 next-day gate.
 Include shared-bank deduplication, negative refund days and original receiving account vs actual payout account when affected.
 
 Report commands, DB version/fixtures, pass/fail/unrun cases and limits in Thai.

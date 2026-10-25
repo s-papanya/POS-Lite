@@ -34,6 +34,10 @@ Authenticate/scope → validate → service transaction: claim scoped idempotenc
 Use domain-rules.md for exceptions such as CLOSED-day settlement and cross-store transfers.
 Client disabled buttons and in-memory mutexes do not protect multiple processes.
 No independent ledger POST that double-posts a sale. Use composite tenant/store FKs and typed source references.
+Expense recognition without payment never posts ledger; immediate payment joins its caller transaction.
+Later payment locks the current day then original expense then account, derives the full debt on the server,
+and checks the whole account balance (including all stores sharing a bank) after the account lock.
+Both service checks and the ledger INSERT guard serialize on that same account; no store-filtered balance.
 Money stays integer satang; old bill name/price snapshots remain immutable; refund posts on current open day.
 SalesService.create owns POS/supplemental idempotency and transaction. postToDay joins the caller-owned
 transaction for reconciliation; it must not open a second transaction or commit independently. Its caller must

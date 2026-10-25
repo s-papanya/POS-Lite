@@ -11,7 +11,13 @@ PostgreSQL/Drizzle schema and runner exist in apps/api/src/db and apps/api/drizz
 Use npm run db:generate and review SQL plus meta snapshot/journal; do not introduce another migration framework.
 The local db:migrate CLI verifies development host/DB/user and applied checksums, serializes migration execution
 and bounds locks/statements. Trigger functions and grantRuntimeAccess are maintained explicitly, not generated
-from Drizzle table definitions. New immutable sources get SELECT/INSERT only for the runtime role.
+from Drizzle table definitions. New immutable sources normally get SELECT/INSERT only for the runtime role.
+PostgreSQL row locks require UPDATE on at least one column: expenses grants UPDATE(id) solely for locking,
+with an unconditional immutable trigger rejecting every UPDATE/DELETE, including id=id. Never grant broad
+UPDATE to solve a lock permission error; verify both the lock and denied rewrites with the runtime role.
+New debit sources need typed composite ledger FKs, exactly-one-source checks, correct signed amounts,
+full-payment deferred guards and an account-locked no-overdraft INSERT guard. Preserve existing credit guards.
+D3 must replace unique(expense_id), paid-status and service checks together with reversal-aware active payments.
 Reconciliation guards validate header/line scope, recorded amounts, deltas and linked RECONCILIATION sales;
 when D3 adds refunds/reversals, update both service aggregates and the guard together.
 Inspect schema/history/runner version before choosing commands/paths.

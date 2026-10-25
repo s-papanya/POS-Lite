@@ -106,3 +106,11 @@ D2a อัปเดต api-design/db-migrations และสำเนา: busine
 MANAGER ต้องมี assignment/store active, cursor ผูกธุรกิจ, normalize ก่อน hash/store และกันชื่อซ้ำใน PostgreSQL
 พร้อมตรวจ rollback source/audit/key โดยไม่สร้าง money movement หรือเปิดวัน
 quick_validate ผ่าน10 skills; สำเนา48ไฟล์ตรงกันและลิงก์74รายการผ่าน; ไม่มี independent behavioral forward-test เพิ่ม
+
+D2b อัปเดต architecture/api-design/db-migrations/test-validation พร้อมสำเนาเดิม:
+เงินออกใช้บัญชี identity เดียวทั้งสองร้านและ lock ก่อนอ่าน balance, payment ใช้ยอดหนี้จาก server,
+caller-owned transaction, recognition/payment dates แยกกัน และ creation replay เป็น snapshot เดิม
+เพิ่มข้อควรระวัง PostgreSQL row lock ต้องมี UPDATE บางคอลัมน์: ใช้ UPDATE(id) คู่ immutable trigger เท่านั้น
+และตรวจ transitive lock graph เพราะผู้รอตัวที่สองอาจรอคนแรก ไม่ได้รอ blocker โดยตรง
+บันทึก D3 active-payment/reversal gap และ fixture historical day ไม่ถือว่าผ่าน D4
+quick_validate ผ่าน10skills, canonical/mirror48ไฟล์ตรงทุกbyte, ลิงก์74รายการผ่าน; ไม่มี independent skill forward-test เพิ่ม
