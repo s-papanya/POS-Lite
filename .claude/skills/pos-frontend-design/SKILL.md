@@ -55,6 +55,15 @@ Do not auto-select a receiving account or replace pending requests while simplif
 Use fixture POST counts plus original key/payload comparisons to verify explicit unknown-result retry;
 this browser check is not proof of database atomicity or physical Android keyboard behavior.
 
+## Entry and store selection
+
+Keep login fields narrow on desktop and one column on phones; retain password type and autocomplete.
+Show the store name before role metadata and make entering the store a clear action.
+Focus the entry heading when the authenticated view changes, not on every status refresh.
+The inline leave decision focuses its group, disables workspace controls, and returns focus to its trigger on cancel.
+Keep draft, discard draft and stay are distinct choices; make destructive discard secondary to keeping work.
+Do not bypass pending-result guards or clear identity-bound storage while restyling access flows.
+
 ## States
 
 Design loading/empty/validation/server/offline/session-expired/committed/unknown-timeout states.
