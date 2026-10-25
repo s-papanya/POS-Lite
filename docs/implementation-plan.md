@@ -16,7 +16,9 @@ D1c หน้ากรอกสอง flow implement และตรวจ brows
 D2a API หมวดรายจ่าย implement แล้ว ดู [expense-categories-validation.md](expense-categories-validation.md)
 D2b API รายจ่ายค้างจ่าย/จ่ายทันที/ชำระเต็ม implement แล้ว ดู [expenses-validation.md](expenses-validation.md)
 D2c1 API เติมทุน/ถอนเงินเจ้าของ implement แล้ว ดู [owner-transactions-validation.md](owner-transactions-validation.md)
-งานพัฒนาถัดไป D2c2 โอนและ fee จากนั้น UI เงินออก; ยังรอ Android จริงและตรวจหลังคืนเงินเมื่อมี D3
+D2c2 API โอนพร้อม fee implement แล้ว ดู [transfers-validation.md](transfers-validation.md)
+เจ้าของปฏิเสธคุณภาพ UX/UIเดิมวันที่26ตุลาคม2026 จึงแทรก UX1 ก่อน D3: ปรับ login/store/POS/payment/daily/history และ UIเงินออกเป็น slices
+S3/D1c เป็น implementation กับ browser-fixture evidence เท่านั้น ไม่ใช่การยอมรับ UX หรือ Android จริง
 วันถัดไปยัง fail closed จนมีหลักฐานปิดวัน/settlement ใน D4
 ติดตามสถานะและเกณฑ์ปิดช่วงงานใน [milestones.md](milestones.md)
 
@@ -29,6 +31,7 @@ D2c1 API เติมทุน/ถอนเงินเจ้าของ implem
 | S3 POS Android | เลือกเมนู/ชำระ/ยืนยัน/ประวัติ, error states, bound draft | Android360pxใช้งานจริง; PRICE_CHANGED; networktimeoutretry; sessionเปลี่ยนผู้ใช้ไม่ส่งdraftเอง |
 | D1 เพิ่มยอด/กระทบยอด | supplemental + previews/revision/confirm + UIแยกคำ | B,C,D,F,G; zero/no-change; signed net target; no account guessing |
 | D2 เงินออก/เงินเจ้าของ/โอน | expense unpaid/full payment, owner, atomic transfer+fee, reporting primitives | H,I,J, rollback feeทั้งชุด, concurrent no-overdraft, shared bank aggregateครั้งเดียว |
+| UX1 Responsive UX/UI overhaul | audit/incumbent captures, เลือกทิศทาง, redesign login/store/POS/payment/daily/history แล้ว UIเงินออก; รักษา pending/idempotency/role guards | mobile/tablet/desktop320–1440pxไม่มี horizontal overflow; touch48px/Thai readable/focus/keyboard; loading/empty/error/unknown states; browser fixturesแยก Androidจริง; เจ้าของยอมรับก่อนปิด |
 | D3 Refund/reversal | full refund, allocations/payouts, generic full reversal allowlist, UI reason | O, closed-original/current-open, refund race/overrefund, reverse fee/payment cycles; permissions OWNER |
 | D4 Closing | cash previews/snapshots/revision, settle, reopen/history | K,L; close/sale race; settlementonce; later day gate; no silent cash correction |
 | R1 Reports/usability | store/business reports/history/audit, real dataเท่านั้น, Androidทดลองกับแม่ | ยอดจากSQLตรงledger; expense≠cash paid; no net-profit claim; staff scope; workflowจบครบ |

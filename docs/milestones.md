@@ -2,18 +2,19 @@
 
 สร้างวันที่ 22 ตุลาคม 2026; ยังไม่กำหนดวันครบกำหนดเพราะยังไม่มีประมาณการจาก implementation
 สร้าง GitHub milestones แล้วใน origin `https://github.com/s-papanya/POS-Lite.git`
-ตรวจผ่านหน้า GitHub แล้วว่าครบ 8 รายการ Open และ 0 Closed ไม่มี due date
+อัปเดตผ่าน GitHub REST และอ่านกลับยืนยันวันที่26ตุลาคม2026: 9รายการ, 7Open/2Closed, ไม่มี due date
 ดู [รายการ milestones บน GitHub](https://github.com/s-papanya/POS-Lite/milestones)
 งานย่อยและรายละเอียดตรวจรับอยู่ใน [implementation-plan.md](implementation-plan.md)
 สถานะ complete ต้องมีหลักฐานตาม [acceptance-scenarios.md](acceptance-scenarios.md)
 
-| Milestone | สถานะเริ่มต้น | งานย่อย | ขึ้นกับ | เกณฑ์ปิด |
+| Milestone | สถานะปัจจุบัน | งานย่อย | ขึ้นกับ | เกณฑ์ปิด |
 |---|---|---|---|---|
-| M0 — Product & Domain Design | เอกสารส่งมอบแล้ว; P1–P5 ยืนยันแล้ว | Requirement, rules, ERD, permissions, contracts, UX, acceptance | — | เจ้าของยืนยัน P4/P5; เอกสารไม่ขัดกัน; แผนครบ A–P; บันทึกข้อจำกัด OpenAPI core subset |
-| M1 — Foundation & Secure Access | F1/F2 implement และผ่าน local validation; GitHub ยัง Open | F1, F2 | M0 เฉพาะข้อออกแบบที่เกี่ยวข้อง; F1 เริ่มได้ก่อน P4/P5 | monorepo/scripts/config/Compose พร้อม; migrations DB จริง; login/CSRF/session/rate limit/store isolation ผ่าน; ไม่มี secret ใน log |
+| M0 — Product & Domain Design | GitHub Closed; เอกสารส่งมอบ/P1–P5 ยืนยันแล้ว | Requirement, rules, ERD, permissions, contracts, UX, acceptance | — | เจ้าของยืนยัน P4/P5; เอกสารไม่ขัดกัน; แผนครบ A–P; บันทึกข้อจำกัด OpenAPI core subset |
+| M1 — Foundation & Secure Access | GitHub Closed; F1/F2 ผ่าน local validation | F1, F2 | M0 เฉพาะข้อออกแบบที่เกี่ยวข้อง; F1 เริ่มได้ก่อน P4/P5 | monorepo/scripts/config/Compose พร้อม; migrations DB จริง; login/CSRF/session/rate limit/store isolation ผ่าน; ไม่มี secret ใน log |
 | M2 — Catalog, Accounts & POS | S1a–c/S2/S3 implement และตรวจ local; ยังรอ Android เครื่องจริง ดู pos-validation.md | S1, S2, S3 | M1 และ P4/P5 ยืนยันแล้ว | ขาย/แบ่งชำระ/เงินทอน/ส่วนลด/ราคา snapshot/history; idempotency/rollback; A,E,M,N,P ผ่านและ Android flow ใช้ได้ |
 | M3 — Supplemental Sales & Reconciliation | D1a–c implement และตรวจ local; Android จริงและ refund allocations ยังรอตรวจ | D1 | M2 | B,C,D,F,G ผ่าน PostgreSQL จริง; signed net target; preview revision/recompute; สองอุปกรณ์ไม่เพิ่มยอดซ้ำ |
-| M4 — Expenses & Money Operations | D2a-b และ D2c1 หมวด/รายจ่าย/ชำระ/เงินเจ้าของ API implement; โอน/UI ยังรอ | D2 | M2; ทำขนาน M3 ได้เมื่อมีผู้รับผิดชอบ | H,I,J ผ่าน; unpaid ไม่ลดเงิน; owner flows แยกจากยอดขาย; transfer/fee atomic; shared bank ไม่รวมซ้ำ |
+| M4 — Expenses & Money Operations | D2a-c2 หมวด/รายจ่าย/ชำระ/เงินเจ้าของ/โอน+fee API implement; UI ยังรอ | D2 | M2; ทำขนาน M3 ได้เมื่อมีผู้รับผิดชอบ | H,I,J ผ่าน; unpaid ไม่ลดเงิน; owner flows แยกจากยอดขาย; transfer/fee atomic; shared bank ไม่รวมซ้ำ |
+| UX1 — Responsive UX/UI Overhaul | GitHub Open; เจ้าของปฏิเสธ UIเดิมวันที่26ตุลาคม2026 เริ่มตรวจ/ออกแบบใหม่ | UX audit, login/store/POS/payment/daily/history แล้ว UIเงินออกเป็น slices | ใช้ backend M2–M4 ที่มีแล้ว; แทรกก่อน D3 | mobile/tablet/desktop320–1440pxไม่มี overflow; ปุ่ม48px/ข้อความอ่านง่าย/focus/keyboard; statesครบ; Androidจริงและเจ้าของยอมรับ |
 | M5 — Refunds & Audited Corrections | ยังไม่เริ่ม | D3 | M3, M4 | O ผ่าน; full refund ไม่เกิน/ไม่ซ้ำ; คืนวันปัจจุบันไม่แก้วันเก่า; reversal ตามชนิด source ครบ; OWNER-only พร้อม audit |
 | M6 — Cash Closing & Reopening | ยังไม่เริ่ม | D4 | M5 | K,L ผ่าน; sale/close race ถูกต้อง; immutable closing snapshots; settlement แยกและครั้งเดียว; reopen มีเหตุผลและ reverse settlement |
 | M7 — Reports & Operational Readiness | ยังไม่เริ่ม | R1, R2 | M6 | รายงานจริงแยกร้าน/รวมถูก; A–P ผ่านทั้งหมดพร้อมหลักฐาน; แม่ทดลอง Android; backup/restore rehearsal สำเร็จ; deployment config review และเจ้าของอนุมัติก่อนเผยแพร่ |
