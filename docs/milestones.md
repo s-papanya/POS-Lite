@@ -14,7 +14,7 @@
 | M2 — Catalog, Accounts & POS | S1a–c/S2/S3 implement และตรวจ local; ยังรอ Android เครื่องจริง ดู pos-validation.md | S1, S2, S3 | M1 และ P4/P5 ยืนยันแล้ว | ขาย/แบ่งชำระ/เงินทอน/ส่วนลด/ราคา snapshot/history; idempotency/rollback; A,E,M,N,P ผ่านและ Android flow ใช้ได้ |
 | M3 — Supplemental Sales & Reconciliation | D1a–c implement และตรวจ local; Android จริงและ refund allocations ยังรอตรวจ | D1 | M2 | B,C,D,F,G ผ่าน PostgreSQL จริง; signed net target; preview revision/recompute; สองอุปกรณ์ไม่เพิ่มยอดซ้ำ |
 | M4 — Expenses & Money Operations | D2a-c2 หมวด/รายจ่าย/ชำระ/เงินเจ้าของ/โอน+fee API implement; UI ยังรอ | D2 | M2; ทำขนาน M3 ได้เมื่อมีผู้รับผิดชอบ | H,I,J ผ่าน; unpaid ไม่ลดเงิน; owner flows แยกจากยอดขาย; transfer/fee atomic; shared bank ไม่รวมซ้ำ |
-| UX1 — Responsive UX/UI Overhaul | GitHub Open; UX1a ตรวจยอด/ประวัติ minimal ผ่าน local browser + finish review; Androidจริง/หน้าที่เหลือยังรอ | UX audit, login/store/POS/payment/daily/history แล้ว UIเงินออกเป็น slices | ใช้ backend M2–M4 ที่มีแล้ว; แทรกก่อน D3 | mobile/tablet/desktop320–1440pxไม่มี overflow; ปุ่ม48px/ข้อความอ่านง่าย/focus/keyboard; statesครบ; Androidจริงและเจ้าของยอมรับ |
+| UX1 — Responsive UX/UI Overhaul | GitHub Open; UX1a ตรวจยอด/ประวัติ และ UX1b ขาย/ชำระ minimal ผ่าน local browser + finish review; Androidจริง/หน้าที่เหลือยังรอ | UX audit, login/store/POS/payment/daily/history แล้ว UIเงินออกเป็น slices | ใช้ backend M2–M4 ที่มีแล้ว; แทรกก่อน D3 | mobile/tablet/desktop320–1440pxไม่มี overflow; ปุ่ม48px/ข้อความอ่านง่าย/focus/keyboard; statesครบ; Androidจริงและเจ้าของยอมรับ |
 | M5 — Refunds & Audited Corrections | ยังไม่เริ่ม | D3 | M3, M4 | O ผ่าน; full refund ไม่เกิน/ไม่ซ้ำ; คืนวันปัจจุบันไม่แก้วันเก่า; reversal ตามชนิด source ครบ; OWNER-only พร้อม audit |
 | M6 — Cash Closing & Reopening | ยังไม่เริ่ม | D4 | M5 | K,L ผ่าน; sale/close race ถูกต้อง; immutable closing snapshots; settlement แยกและครั้งเดียว; reopen มีเหตุผลและ reverse settlement |
 | M7 — Reports & Operational Readiness | ยังไม่เริ่ม | R1, R2 | M6 | รายงานจริงแยกร้าน/รวมถูก; A–P ผ่านทั้งหมดพร้อมหลักฐาน; แม่ทดลอง Android; backup/restore rehearsal สำเร็จ; deployment config review และเจ้าของอนุมัติก่อนเผยแพร่ |
@@ -60,3 +60,5 @@ M0 ยังไม่ควร close จน P4/P5 ยืนยัน; milestone 
 ไม่ใส่ due date หรือ assignee โดยเดา และบันทึก URL/หมายเลข milestone กลับในเอกสารนี้หลังสร้างจริง
 
 UX1a หลักฐานและข้อจำกัด: [validation](ux1a-validation.md); ไม่ปิด UX1 หรือ M2–M4 จาก browser fixture เพียงอย่างเดียว
+
+UX1b หลักฐาน: [ขายและชำระเงิน](ux1b-validation.md); original-key retry ผ่าน browser fixture ไม่ใช่ production/Android acceptance

@@ -13,6 +13,7 @@ D2a หมวดรายจ่าย GET/POST เพิ่มแล้ว ด�
 D2b API รายจ่าย/จ่ายเต็มและ debit ledger เพิ่มแล้ว ดู [expenses-validation.md](expenses-validation.md)
 D2c1 API เติมทุน/ถอน OWNER เพิ่มแล้ว ดู [owner-transactions-validation.md](owner-transactions-validation.md)
 D2c2 API โอน/fee เพิ่มแล้ว ดู [transfers-validation.md](transfers-validation.md); UI เงินออกยังเป็นแผน
+UX1a ตรวจยอด/ประวัติ และ UX1b ขาย/ชำระปรับ mobile UX แล้ว; ดู [UX1a](ux1a-validation.md), [UX1b](ux1b-validation.md); Androidจริงยังรอ
 skills อยู่ใน `.agents/skills` ใช้เฉพาะประเภทงานที่เกี่ยวข้อง ไม่โหลดทุก skill ทุกครั้ง
 ตรวจ package/config และผลรันใหม่ก่อนอ้างสถานะ หากโค้ดต่างจากกฎธุรกิจที่ตกลงให้รายงาน gap ไม่แก้กฎตาม bug
 
