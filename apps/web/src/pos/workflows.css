@@ -114,3 +114,35 @@
 }
 
 @media (max-width: 640px) { .site-header { flex-direction: row; gap: 8px; } .site-header > span { font-size: 16px; } }
+
+/* Selling stays a menu and a bill; payment keeps the amount ahead of optional fields. */
+.basket-count { font-size: 18px; font-weight: 400; color: var(--color-muted); }
+.checkout-actions { display: flex; gap: 8px; }
+.checkout-bar { font-variant-numeric: tabular-nums; }
+.payment-total { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding: 20px 0; border-bottom: 1px solid var(--color-border); }
+.payment-total strong { font-size: 28px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.payment-help { color: var(--color-muted); margin: 16px 0; max-width: 60ch; }
+.sale-discount { margin: 16px 0; }
+.sale-discount summary { padding: 8px 0; }
+.sale-payment .cash-change { padding: 16px; margin: 16px 0; background: #edf2f8; font-size: 22px; font-weight: 700; }
+.sale-payment .money-summary > div:last-child { font-weight: 700; }
+@media (min-width: 960px) {
+  .selling-layout > section:last-child { background: #f4f7fa; padding: 16px 24px; border-radius: 12px; }
+}
+@media (max-width: 640px) {
+  .product-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .product-grid button { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 16px; min-height: 72px; }
+  .product-grid button { flex-wrap: wrap; }
+  .product-grid button strong { min-width: 0; flex: 1 1 160px; }
+  .product-grid button span { flex-shrink: 0; margin: 0; }
+  .checkout-bar { flex-wrap: wrap; }
+  .checkout-actions { width: 100%; }
+  .checkout-actions button { flex: 1; min-width: 0; padding-inline: 8px; }
+  .sale-payment .discount-fields { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .sale-payment .actions, .sale-review .actions { flex-direction: column-reverse; }
+  .sale-payment .actions button, .sale-review .actions button { flex: auto; width: 100%; }
+  .sale-review .bill-lines li { display: block; }
+  .sale-review .bill-lines strong { display: block; margin-top: 8px; }
+  .sale-payment .money-summary > div, .sale-review .money-summary > div { display: block; }
+  .sale-payment .money-summary dd, .sale-review .money-summary dd { text-align: left; }
+}
