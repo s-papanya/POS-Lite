@@ -9,7 +9,8 @@ S3 หน้าขาย/ชำระ/ตรวจบิล/ประวัต�
 D1a API เพิ่มยอด SUPPLEMENTAL/reason และ history เพิ่มแล้ว ดู [supplemental-sales-validation.md](supplemental-sales-validation.md)
 D1b API กระทบยอด preview/confirm เพิ่มแล้ว ดู [reconciliation-validation.md](reconciliation-validation.md)
 D1c หน้ากรอกเพิ่มยอด/ตรวจยอดทั้งวันเพิ่มแล้ว ดู [daily-ui-validation.md](daily-ui-validation.md); Android จริงยังรอตรวจ
-D2a หมวดรายจ่าย GET/POST เพิ่มแล้ว ดู [expense-categories-validation.md](expense-categories-validation.md); expense/payment/owner/transfer ยังเป็นแผน
+D2a หมวดรายจ่าย GET/POST เพิ่มแล้ว ดู [expense-categories-validation.md](expense-categories-validation.md)
+D2b API รายจ่าย/จ่ายเต็มและ debit ledger เพิ่มแล้ว ดู [expenses-validation.md](expenses-validation.md); owner/transfer/UI เงินออกยังเป็นแผน
 skills อยู่ใน `.agents/skills` ใช้เฉพาะประเภทงานที่เกี่ยวข้อง ไม่โหลดทุก skill ทุกครั้ง
 ตรวจ package/config และผลรันใหม่ก่อนอ้างสถานะ หากโค้ดต่างจากกฎธุรกิจที่ตกลงให้รายงาน gap ไม่แก้กฎตาม bug
 
@@ -17,7 +18,7 @@ skills อยู่ใน `.agents/skills` ใช้เฉพาะประเ�
 
 | เรื่อง | มีจริง | แผนที่ยังไม่ implement |
 |---|---|---|
-| Runtime | React/Vite/TypeScript, Express, Zod, Pino, pg/Drizzle, Argon2id; auth/catalog/accounts/เปิดวัน/POS+supplemental/reconciliation/history/credit ledger | ปิดวัน/settlement/debit ledger |
+| Runtime | React/Vite/TypeScript, Express, Zod, Pino, pg/Drizzle, Argon2id; auth/catalog/accounts/เปิดวัน/POS+supplemental/reconciliation/history/expenses/credit+expense debit ledger | ปิดวัน/settlement/owner/transfer/refund |
 | Tests | Vitest5/Supertest; pure BigInt money และ PostgreSQL auth/sales/constraints/rollback/lock integration | acceptance A–P ทุก module และ Android |
 | CI/CD | ยังไม่มี workflows หรือ deployment manifests | CI, staging/production pipeline, backup/restore |
 | Lint | Root ESLint สำหรับ API/tests/packages; เว็บ Hooks/Fast Refresh; root build/typecheck/lint/test | CI quality gates |

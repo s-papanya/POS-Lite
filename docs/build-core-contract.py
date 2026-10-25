@@ -364,8 +364,45 @@ for method in ["get", "post"]:
         operation["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref("ExpenseCategoryCreateRequest")}}}
     paths.setdefault("/expense-categories", {})[method] = operation
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.10.0",
-    "description": "F1/F2, S1a-c, S2, D1a-b and D2a expense categories implemented. Expense money writes, refund/closing remain design only. See api-contracts.md."},
+SCHEMAS["ExpenseAmount"] = {"type": "string", "pattern": r"^[1-9][0-9]{0,12}$", "description": "Positive satang, maximum9000000000000."}
+SCHEMAS["ExpensePaymentRequest"] = obj({"businessDate": ref("Date"), "occurredAt": ref("Time"), "accountId": ref("Id")})
+SCHEMAS["ExpenseRequest"] = obj({"businessDate": ref("Date"), "occurredAt": ref("Time"), "categoryId": ref("Id"), "amount": ref("ExpenseAmount"),
+    "description": ref("Text"), "evidenceReference": ref("Text"), "payment": obj({"accountId": ref("Id")})}, ("evidenceReference", "payment"))
+SCHEMAS["ExpensePayment"] = obj({"id": ref("Id"), "expenseId": ref("Id"), "accountId": ref("Id"), "businessDate": ref("Date"), "occurredAt": ref("Time"), "amount": ref("ExpenseAmount")})
+SCHEMAS["Expense"] = obj({"id": ref("Id"), "categoryId": ref("Id"), "businessDate": ref("Date"), "occurredAt": ref("Time"), "amount": ref("ExpenseAmount"),
+    "description": ref("Text"), "evidenceReference": ref("NullableText"), "status": {"type": "string", "enum": ["UNPAID", "PAID"]},
+    "payment": {"oneOf": [ref("ExpensePayment"), {"type": "null"}]}})
+SCHEMAS["ExpenseResponse"] = obj({"data": ref("Expense")})
+SCHEMAS["ExpensePaymentResponse"] = obj({"data": ref("ExpensePayment")})
+SCHEMAS["ExpenseListResponse"] = obj({"data": array("Expense"), "page": obj({"nextCursor": {"type": ["string", "null"]}})})
+for path, method, operation_id, request_schema, response_schema in [
+    ("/stores/{storeId}/expenses", "get", "listExpenses", None, "ExpenseListResponse"),
+    ("/stores/{storeId}/expenses", "post", "createExpense", "ExpenseRequest", "ExpenseResponse"),
+    ("/stores/{storeId}/expenses/{expenseId}/payments", "post", "payExpense", "ExpensePaymentRequest", "ExpensePaymentResponse"),
+]:
+    params = [{"name": "storeId", "in": "path", "required": True, "schema": ref("Id")}]
+    if "{expenseId}" in path:
+        params += [{"name": "expenseId", "in": "path", "required": True, "schema": ref("Id")}]
+    if method == "get":
+        params += [{"name": field, "in": "query", "required": True, "schema": ref("Date")} for field in ["from", "to"]]
+        params += [{"name": "status", "in": "query", "schema": {"type": "string", "enum": ["ALL", "UNPAID", "PAID"], "default": "ALL"}},
+                   {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}},
+                   {"name": "cursor", "in": "query", "schema": {"type": "string", "maxLength": 2048}}]
+    else:
+        params += [p for p in post["parameters"] if p["name"] in ["Origin", "X-CSRF-Token", "Idempotency-Key", "X-Expected-User-Id", "X-Expected-Business-Id"]]
+    responses = {"200" if method == "get" else "201": {"description": "Scoped recognition-date page" if method == "get" else "Committed source or original replay",
+        "content": {"application/json": {"schema": ref(response_schema)}}}}
+    for code in ["400", "401", "403", "404", "409", "413", "422", "500"]:
+        responses[code] = {"description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {"application/json": {"schema": ref("Error")}}}
+    operation = {"operationId": operation_id, "x-implemented": True, "x-permissions": ["OWNER", "MANAGER"], "parameters": params, "responses": responses,
+        "description": "Recognition and payment dates are separate. Current Bangkok OPEN day only for new sources; original closed expense may be paid today. Unpaid has no ledger; full payment uses server debt amount once. Immediate create/payment atomic. Revision+1 per action. Read range max366 days; business/store/filter-bound descending occurredAt/id cursor. No reversals yet."}
+    if request_schema:
+        operation["requestBody"] = {"required": True, "content": {"application/json": {"schema": ref(request_schema)}}}
+    paths.setdefault(path, {})[method] = operation
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.11.0",
+    "description": "F1/F2, S1a-c, S2, D1a-b and D2a-b expenses implemented. Owner/transfer, refund/closing remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":

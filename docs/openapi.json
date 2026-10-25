@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Family Store Manager core design contract",
-    "version": "0.10.0",
-    "description": "F1/F2, S1a-c, S2, D1a-b and D2a expense categories implemented. Expense money writes, refund/closing remain design only. See api-contracts.md."
+    "version": "0.11.0",
+    "description": "F1/F2, S1a-c, S2, D1a-b and D2a-b expenses implemented. Owner/transfer, refund/closing remain design only. See api-contracts.md."
   },
   "servers": [
     {
@@ -3740,6 +3740,504 @@
           }
         }
       }
+    },
+    "/stores/{storeId}/expenses": {
+      "get": {
+        "operationId": "listExpenses",
+        "x-implemented": true,
+        "x-permissions": [
+          "OWNER",
+          "MANAGER"
+        ],
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Date"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "UNPAID",
+                "PAID"
+              ],
+              "default": "ALL"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped recognition-date page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Recognition and payment dates are separate. Current Bangkok OPEN day only for new sources; original closed expense may be paid today. Unpaid has no ledger; full payment uses server debt amount once. Immediate create/payment atomic. Revision+1 per action. Read range max366 days; business/store/filter-bound descending occurredAt/id cursor. No reversals yet."
+      },
+      "post": {
+        "operationId": "createExpense",
+        "x-implemented": true,
+        "x-permissions": [
+          "OWNER",
+          "MANAGER"
+        ],
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-Expected-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
+            "name": "X-Expected-Business-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Committed source or original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Recognition and payment dates are separate. Current Bangkok OPEN day only for new sources; original closed expense may be paid today. Unpaid has no ledger; full payment uses server debt amount once. Immediate create/payment atomic. Revision+1 per action. Read range max366 days; business/store/filter-bound descending occurredAt/id cursor. No reversals yet.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stores/{storeId}/expenses/{expenseId}/payments": {
+      "post": {
+        "operationId": "payExpense",
+        "x-implemented": true,
+        "x-permissions": [
+          "OWNER",
+          "MANAGER"
+        ],
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "expenseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-Expected-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
+            "name": "X-Expected-Business-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Committed source or original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpensePaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error;409 DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/ALREADY_PAID/INSUFFICIENT_FUNDS/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Recognition and payment dates are separate. Current Bangkok OPEN day only for new sources; original closed expense may be paid today. Unpaid has no ledger; full payment uses server debt amount once. Immediate create/payment atomic. Revision+1 per action. Read range max366 days; business/store/filter-bound descending occurredAt/id cursor. No reversals yet.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpensePaymentRequest"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5760,6 +6258,218 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ExpenseCategory"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "page": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "nextCursor"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "page"
+        ]
+      },
+      "ExpenseAmount": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{0,12}$",
+        "description": "Positive satang, maximum9000000000000."
+      },
+      "ExpensePaymentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "businessDate",
+          "occurredAt",
+          "accountId"
+        ]
+      },
+      "ExpenseRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "categoryId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/ExpenseAmount"
+          },
+          "description": {
+            "$ref": "#/components/schemas/Text"
+          },
+          "evidenceReference": {
+            "$ref": "#/components/schemas/Text"
+          },
+          "payment": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "accountId": {
+                "$ref": "#/components/schemas/Id"
+              }
+            },
+            "required": [
+              "accountId"
+            ]
+          }
+        },
+        "required": [
+          "businessDate",
+          "occurredAt",
+          "categoryId",
+          "amount",
+          "description"
+        ]
+      },
+      "ExpensePayment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "expenseId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "accountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/ExpenseAmount"
+          }
+        },
+        "required": [
+          "id",
+          "expenseId",
+          "accountId",
+          "businessDate",
+          "occurredAt",
+          "amount"
+        ]
+      },
+      "Expense": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "categoryId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/ExpenseAmount"
+          },
+          "description": {
+            "$ref": "#/components/schemas/Text"
+          },
+          "evidenceReference": {
+            "$ref": "#/components/schemas/NullableText"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "PAID"
+            ]
+          },
+          "payment": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ExpensePayment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "categoryId",
+          "businessDate",
+          "occurredAt",
+          "amount",
+          "description",
+          "evidenceReference",
+          "status",
+          "payment"
+        ]
+      },
+      "ExpenseResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Expense"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "ExpensePaymentResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ExpensePayment"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "ExpenseListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Expense"
             },
             "minItems": 0,
             "maxItems": 100

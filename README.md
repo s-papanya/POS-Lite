@@ -14,7 +14,8 @@
 D1a API “เพิ่มยอดที่ยังไม่ได้บันทึก” เพิ่มแล้วสำหรับ OWNER/MANAGER พร้อมแยกประเภทในประวัติ
 ดู [ผลตรวจ D1a](docs/supplemental-sales-validation.md) และ [D1b API preview/confirm กระทบยอด](docs/reconciliation-validation.md)
 D1c หน้ากรอกสอง flow เพิ่มแล้ว พร้อม draft/review/กู้รายการค้าง ดู [ผลตรวจหน้าจอ](docs/daily-ui-validation.md)
-D2a API หมวดรายจ่ายเพิ่มแล้ว พร้อมสิทธิ์และป้องกันชื่อซ้ำ ดู [ผลตรวจ](docs/expense-categories-validation.md); รายการรายจ่ายและชำระเงินยังรอพัฒนา
+D2a API หมวดรายจ่ายเพิ่มแล้ว พร้อมสิทธิ์และป้องกันชื่อซ้ำ ดู [ผลตรวจ](docs/expense-categories-validation.md)
+D2b API รายจ่ายค้างจ่าย/จ่ายทันที/ชำระเต็มเพิ่มแล้ว พร้อมป้องกันจ่ายซ้ำและบัญชีติดลบ ดู [ผลตรวจ](docs/expenses-validation.md); หน้าจอเงินออกยังรอพัฒนา
 
 | ส่วน | สิ่งที่มีตอนนี้ |
 |---|---|
