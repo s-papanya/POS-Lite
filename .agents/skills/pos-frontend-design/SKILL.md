@@ -44,6 +44,17 @@ Keep cursor pages tied to the applied query. Loaded counts are not a complete da
 Use list/detail on wide screens and a back action with restored row focus on phones.
 Test long exact amounts, Thai names and 320px reflow; do not truncate money to make a row fit.
 
+## Selling and payment layout
+
+Keep menu names and exact prices readable on narrow screens; let long rows reflow.
+The checkout total offers a direct basket jump and payment action without hiding keyboard focus.
+Show the net amount before optional discount controls; keep an existing discount visible in its summary.
+Show outstanding or overallocated payment separately from cash change; these are different quantities.
+Move focus to pay/review headings on step changes and success after server confirmation.
+Do not auto-select a receiving account or replace pending requests while simplifying the form.
+Use fixture POST counts plus original key/payload comparisons to verify explicit unknown-result retry;
+this browser check is not proof of database atomicity or physical Android keyboard behavior.
+
 ## States
 
 Design loading/empty/validation/server/offline/session-expired/committed/unknown-timeout states.
