@@ -6,7 +6,8 @@ const scope = { userId: 'u', businessId: 'b', storeId: 's' }
 const id = '00000000-0000-4000-8000-000000000001'
 const accounts = [{ id, name: 'เงินสด', type: 'CASH' as const }]
 it('keeps additional money separate from signed daily targets without guessing accounts', () => {
-  const draft = { ...emptyDaily(), amount: '100.25', reason: 'ตกหล่น', payments: [{ accountId: id, amount: '100.25', tendered: '200' }] }
+  assert.equal(emptyDaily().mode, 'reconcile')
+  const draft = { ...emptyDaily(), mode: 'additional' as const, amount: '100.25', reason: 'ตกหล่น', payments: [{ accountId: id, amount: '100.25', tendered: '200' }] }
   assert.equal(prepareAdditional(draft, accounts).amount, '10025')
   assert.throws(() => prepareAdditional({ ...draft, amount: '101' }, accounts))
   assert.throws(() => prepareAdditional({ ...draft, payments: [{ accountId: '', amount: '100.25', tendered: '200' }] }, accounts))
@@ -14,7 +15,7 @@ it('keeps additional money separate from signed daily targets without guessing a
   assert.throws(() => prepareTargets({ ...draft, targets: [{ accountId: id, amount: '' }] }, accounts))
 })
 it('binds pending daily requests to the exact identity, mode and payload and preserves corrupt storage', () => {
-  const draft = { ...emptyDaily(), amount: '10', reason: 'ตกหล่น', payments: [{ accountId: id, amount: '10', tendered: '10' }] }
+  const draft = { ...emptyDaily(), mode: 'additional' as const, amount: '10', reason: 'ตกหล่น', payments: [{ accountId: id, amount: '10', tendered: '10' }] }
   const pending = { mode: 'additional', scope: dailyKey(scope), key: id, request: prepareAdditional(draft, accounts) }
   const raw = JSON.stringify({ draft, pending })
   const storage = { getItem: () => raw }

@@ -15,7 +15,7 @@ export type DailyDraft = z.infer<typeof draftSchema>
 export type DailyPending = z.infer<typeof pendingSchema>
 export type DailyPreview = z.infer<typeof reconciliationPreviewResponseSchema>['data']
 export const dailyKey = (scope: Scope) => `${scopeKey(scope)}:daily`
-export const emptyDaily = (): DailyDraft => ({ mode: 'additional', date: bangkokDate(), reason: '', amount: '', payments: [{ accountId: '', amount: '', tendered: '' }], targets: [{ accountId: '', amount: '' }] })
+export const emptyDaily = (): DailyDraft => ({ mode: 'reconcile', date: bangkokDate(), reason: '', amount: '', payments: [{ accountId: '', amount: '', tendered: '' }], targets: [{ accountId: '', amount: '' }] })
 export const hasDaily = (d: DailyDraft) => !!(d.reason || d.amount || d.payments.some(p => p.accountId || p.amount || p.tendered) || d.targets.some(t => t.accountId || t.amount))
 export const dailyRollback = new Set([...definitiveRejection, 'STALE_PREVIEW', 'RECONCILIATION_REQUIRES_REVIEW'])
 export function loadDaily(storage: Pick<Storage, 'getItem'>, scope: Scope): { draft: DailyDraft; pending: DailyPending | null; corrupt: boolean } {

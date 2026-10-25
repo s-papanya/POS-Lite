@@ -6,6 +6,7 @@ import { baht, bangkokDate, definitiveRejection, emptyDraft, hasDraft, inputBaht
 import type { Draft, Pending } from './state'
 import { History } from './History'
 import { Receipt } from './Receipt'
+import { thaiDay } from './display'
 import { DailyWorkspace } from './DailyWorkspace'
 import { emptyDaily, hasDaily, loadDaily } from './daily-state'
 
@@ -115,8 +116,8 @@ export function PosWorkspace({ me, store, onExpired, onWorkChange }: { me: MeRes
   const reviewedPayments = pending?.request.payments ?? draft.payments.map(p => ({ accountId: p.accountId, channel: accounts.find(a => a.id === p.accountId)?.type === 'CASH' ? 'CASH' as const : 'TRANSFER' as const,
     amount: String(satang(p.amount) ?? 0n), tendered: String(satang(p.tendered) ?? 0n) }))
   return <section className="pos" aria-labelledby="store-title">
-    <header className="pos-heading"><h1 id="store-title">{store.name}</h1><p>วันทำการ {pending?.request.businessDate ?? draft.date}</p></header>
-    <nav className="pos-tabs" aria-label="งานหน้าร้าน"><button type="button" aria-current={tab === 'sale' ? 'page' : undefined} onClick={() => setTab('sale')}>ขายสินค้า{pending ? ' · รอยืนยัน' : ''}</button><button type="button" aria-current={tab === 'history' ? 'page' : undefined} onClick={() => setTab('history')}>ประวัติบิล</button>{(store.role !== 'STAFF' || dailyWork.draft || dailyWork.pending) && <button type="button" aria-current={tab === 'daily' ? 'page' : undefined} aria-label="เพิ่มเติม / ตรวจยอด" onClick={() => setTab('daily')}>งานยอดขาย{dailyWork.pending ? ' · รอยืนยัน' : ''}</button>}</nav>
+    <header className="pos-heading"><h1 id="store-title">{store.name}</h1><p>{thaiDay(pending?.request.businessDate ?? draft.date)}</p></header>
+    <nav className="pos-tabs" aria-label="งานหน้าร้าน"><button type="button" aria-current={tab === 'sale' ? 'page' : undefined} onClick={() => setTab('sale')}>ขายสินค้า{pending ? ' · รอยืนยัน' : ''}</button><button type="button" aria-current={tab === 'history' ? 'page' : undefined} onClick={() => setTab('history')}>ประวัติบิล</button>{(store.role !== 'STAFF' || dailyWork.draft || dailyWork.pending) && <button type="button" aria-current={tab === 'daily' ? 'page' : undefined} aria-label="เพิ่มเติม / ตรวจยอด" onClick={() => setTab('daily')}>ตรวจยอด{dailyWork.pending ? ' · รอยืนยัน' : ''}</button>}</nav>
     {!online && <p className="notice">ยังไม่ได้เชื่อมต่อ รายการยังอยู่ในอุปกรณ์ จะไม่ส่งบิลอัตโนมัติ</p>}
     {closed && <p className="notice">วันทำการนี้ปิดแล้ว ดูประวัติบิลได้ หรือติดต่อเจ้าของร้าน</p>}
     <div hidden={tab !== 'daily'}><DailyWorkspace me={me} scope={scope} storeName={store.name} accounts={accounts} initial={dailySeed} blocked={!!pending || seed.corrupt || busy || loading} loading={loading} allowed={store.role !== 'STAFF'} closed={closed} online={online} today={today} onExpired={expired} onWorkChange={setDailyWork} onHistory={() => setTab('history')} onReload={() => { setLoading(true); setAttempt(n => n + 1) }} /></div>
