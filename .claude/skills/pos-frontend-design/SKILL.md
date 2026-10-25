@@ -34,6 +34,16 @@ Review shows store, amount, channel, account, discount/change and action type be
 Distinguish “เพิ่มยอดที่ยังไม่ได้บันทึก” from “ตรวจยอดขายรวมทั้งวัน”; daily actual is net after refunds.
 Don't guess accounts, hide negative net targets, change sales for cash shortage or call incomplete costing net profit.
 
+## Daily and history layout
+
+Start an empty daily draft in reconciliation; preserve the mode of restored or pending drafts.
+Put account/amount before the required reason; preview recorded/target/delta and store/date before confirm.
+Focus the review heading on entry, and the task heading on back/success; hidden mounted tabs must not steal focus.
+History offers today/yesterday and an explicit date range; show applied dates separately from editable filters.
+Keep cursor pages tied to the applied query. Loaded counts are not a complete daily sales total.
+Use list/detail on wide screens and a back action with restored row focus on phones.
+Test long exact amounts, Thai names and 320px reflow; do not truncate money to make a row fit.
+
 ## States
 
 Design loading/empty/validation/server/offline/session-expired/committed/unknown-timeout states.
