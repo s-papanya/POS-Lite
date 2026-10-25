@@ -11,6 +11,7 @@ import { accountsRouter } from "./modules/accounts/routes.js";
 import { businessDaysRouter } from "./modules/business-days/routes.js";
 import { salesRouter } from "./modules/sales/routes.js";
 import { expenseCategoriesRouter } from "./modules/expenses/categories.routes.js";
+import { expensesRouter } from "./modules/expenses/routes.js";
 
 export function createApp({ logger, config, auth }: { logger: Logger; config: AppConfig; auth?: AuthService }) {
   const app = express();
@@ -35,6 +36,7 @@ export function createApp({ logger, config, auth }: { logger: Logger; config: Ap
   if (auth) app.use("/api/v1", businessDaysRouter(auth));
   if (auth) app.use("/api/v1", salesRouter(auth));
   if (auth) app.use("/api/v1", expenseCategoriesRouter(auth));
+  if (auth) app.use("/api/v1", expensesRouter(auth));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

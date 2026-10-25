@@ -57,6 +57,13 @@
       "when": 1792879672026,
       "tag": "0007_expense_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792880112741,
+      "tag": "0008_expenses",
+      "breakpoints": true
     }
   ]
 }

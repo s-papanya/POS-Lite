@@ -14,6 +14,8 @@ export interface MeResponse {
 export interface CsrfResponse { data: { csrfToken: string } }
 export interface Product { id: string; name: string; price: string; version: number; active: boolean }
 export interface ExpenseCategory { id:string; name:string; active:boolean }
+export interface ExpensePayment {id:string;expenseId:string;accountId:string;businessDate:string;occurredAt:string;amount:string}
+export interface Expense {id:string;categoryId:string;businessDate:string;occurredAt:string;amount:string;description:string;evidenceReference:string | null;status:"UNPAID" | "PAID";payment:ExpensePayment | null}
 export interface FinancialAccount { id:string; name:string; type:"CASH" | "BANK"; active:boolean; storeIds:string[] }
 export interface AccountOpening { id:string; accountId:string; storeId:string; amount:string; cutoverAt:string; reason:string }
 export interface SaleItem {productId:string;nameSnapshot:string;unitPrice:string;productVersion:number;quantity:number;lineTotal:string}

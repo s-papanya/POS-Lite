@@ -74,6 +74,19 @@ export const supplementalSaleRequestSchema=z.strictObject({businessDate:business
   occurredAt:saleRequestSchema.shape.occurredAt,amount:positiveMoneySchema,reason:z.string().trim().min(1).max(1000),
   payments:saleRequestSchema.shape.payments}).refine((v)=>new Set(v.payments.map((p)=>p.accountId)).size===v.payments.length);
 export type SupplementalSaleRequest = z.infer<typeof supplementalSaleRequestSchema>;
+export const expensePaymentRequestSchema=z.strictObject({businessDate:businessDateSchema,occurredAt:saleRequestSchema.shape.occurredAt,accountId:resourceIdSchema});
+export const expenseRequestSchema=z.strictObject({businessDate:businessDateSchema,occurredAt:saleRequestSchema.shape.occurredAt,
+  categoryId:resourceIdSchema,amount:positiveMoneySchema,description:z.string().trim().min(1).max(1000),
+  evidenceReference:z.string().trim().min(1).max(1000).optional(),payment:z.strictObject({accountId:resourceIdSchema}).optional()});
+export type ExpenseRequest=z.infer<typeof expenseRequestSchema>;
+export type ExpensePaymentRequest=z.infer<typeof expensePaymentRequestSchema>;
+export const expensePaymentSchema=z.strictObject({id:z.uuid(),expenseId:z.uuid(),accountId:z.uuid(),businessDate:businessDateSchema,
+  occurredAt:z.iso.datetime({offset:true}),amount:positiveMoneySchema});
+export const expenseSchema=z.strictObject({id:z.uuid(),categoryId:z.uuid(),businessDate:businessDateSchema,occurredAt:z.iso.datetime({offset:true}),
+  amount:positiveMoneySchema,description:z.string(),evidenceReference:z.string().nullable(),status:z.enum(["UNPAID","PAID"]),payment:expensePaymentSchema.nullable()});
+export const expenseResponseSchema=z.strictObject({data:expenseSchema});
+export const expensePaymentResponseSchema=z.strictObject({data:expensePaymentSchema});
+export const expenseListResponseSchema=z.strictObject({data:z.array(expenseSchema).max(100),page:z.strictObject({nextCursor:z.string().nullable()})});
 const posSaleSchema=z.strictObject({id:z.uuid(),reference:z.string(),kind:z.literal("POS"),businessDate:businessDateSchema,
   occurredAt:z.iso.datetime({offset:true}),gross:positiveMoneySchema,discount:nonnegativeMoneySchema,net:positiveMoneySchema,
   dayRevision:z.string().regex(/^[0-9]+$/),items:z.array(z.strictObject({productId:z.uuid(),nameSnapshot:z.string(),unitPrice:positiveMoneySchema,
