@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { MeResponse } from '@pos-lite/shared'
 import { csrfResponseSchema, meResponseSchema } from '@pos-lite/validation'
@@ -20,6 +20,15 @@ export function StoreAccess() {
   const [work, setWork] = useState<WorkState>({ draft: false, pending: false })
   const [leaving, setLeaving] = useState<'store' | 'logout' | null>(null)
   const [blockedLeave, setBlockedLeave] = useState(false)
+  const accessTitle = useRef<HTMLHeadingElement>(null); const leaveNotice = useRef<HTMLDivElement>(null); const leaveTrigger = useRef<HTMLElement | null>(null)
+  const previousView = useRef('checking')
+  useEffect(() => {
+    if (pending) return
+    const view = selected ? 'workspace' : me ? 'stores' : 'login'
+    if (view !== previousView.current && !selected) accessTitle.current?.focus()
+    previousView.current = view
+  }, [pending, me, selected])
+  useEffect(() => { if (leaving) leaveNotice.current?.focus() }, [leaving])
   const expired = useCallback(() => { setMe(null); setSelected(''); setWork({ draft: false, pending: false }); setMessage('บัญชีหมดอายุหรือเปลี่ยนแล้ว กรุณาเข้าสู่ระบบเดิมเพื่อตรวจบิลค้าง ไม่มีการส่งซ้ำอัตโนมัติ') }, [])
   function restoreSelection(data: MeResponse['data']) {
     try { const id = sessionStorage.getItem(selectionKey(data.user.id, data.business.id)); return data.stores.some(s => s.id === id) ? id! : '' } catch { return '' }
@@ -85,6 +94,7 @@ export function StoreAccess() {
     finally { setPending(false) }
   }
   function leave(action: 'store' | 'logout') {
+    leaveTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     if (work.pending) { setBlockedLeave(true); return }
     if (action === 'logout' && me) {
       try {
@@ -108,30 +118,31 @@ export function StoreAccess() {
     if (action === 'logout') void logout()
   }
 
-  return <section className="store-access" aria-labelledby="access-title" aria-busy={pending}>
-    {selected ? <h2 id="access-title" className="sr-only">หน้าร้าน</h2> : <h1 id="access-title">{me ? 'เลือกร้านของคุณ' : 'เข้าสู่ระบบร้านของเรา'}</h1>}
+  return <section className={`store-access${!selected ? ' access-entry' : ''}`} aria-labelledby="access-title" aria-busy={pending}>
+    {selected ? <h2 id="access-title" className="sr-only">หน้าร้าน</h2> : <h1 id="access-title" tabIndex={-1} ref={accessTitle}>{me ? 'เลือกร้านของคุณ' : 'เข้าสู่ระบบร้านของเรา'}</h1>}
+    {!selected && <p className="access-intro">{me ? 'เลือกร้านที่กำลังทำงาน ตรวจชื่อร้านก่อนเริ่มขาย' : 'ใช้บัญชีของคุณ แล้วเลือกร้านที่ต้องการทำงาน'}</p>}
     {me ? <>
       {!selected && <div className="store-list">
         {me.stores.map((store) => <button key={store.id} type="button" aria-pressed={selected === store.id} disabled={pending}
           onClick={() => { setSelected(store.id); setWork({ draft: false, pending: false }); try { sessionStorage.setItem(selectionKey(me.user.id, me.business.id), store.id) } catch { /* Selling remains blocked if pending storage fails. */ } setMessage('') }}>
-          <strong>{store.name}</strong><span>{({OWNER:'เจ้าของร้าน',MANAGER:'ผู้จัดการ',STAFF:'พนักงาน'})[store.role]}</span>
+          <strong>{store.name}</strong><span>สิทธิ์: {({OWNER:'เจ้าของร้าน',MANAGER:'ผู้จัดการ',STAFF:'พนักงาน'})[store.role]}</span><span className="store-enter" aria-hidden="true">เข้าร้าน</span>
         </button>)}
       </div>}
       {!me.stores.length && <p>ยังไม่มีร้านที่เปิดให้บัญชีนี้ใช้งาน กรุณาติดต่อเจ้าของร้าน</p>}
       <details className="account-tools"><summary>บัญชี {me.user.username}</summary><p>{me.business.name}</p>
       <div className="access-actions">{selected && <button type="button" className="secondary-action" disabled={pending} onClick={() => leave('store')}>เปลี่ยนร้าน</button>}
       <button type="button" className="secondary-action" disabled={pending} onClick={() => leave('logout')}>ออกจากระบบ</button></div></details>
-      {leaving && <div className="notice" role="group" aria-label="จัดการรายการที่ยังไม่ส่ง"><p>{leaving === 'logout' ? 'ออกจากระบบจะล้างรายการที่ยังไม่ส่งของบัญชีนี้ บิลที่บันทึกแล้วอยู่ในประวัติ' : 'มีรายการที่ยังไม่ส่ง ต้องการเก็บไว้กลับมาทำต่อหรือทิ้งรายการ?'}</p>
-        <div className="actions">{leaving === 'store' && <button type="button" onClick={() => finishLeave(false)}>เก็บไว้แล้วเปลี่ยนร้าน</button>}<button type="button" onClick={() => finishLeave(true)}>{leaving === 'store' ? 'ทิ้งแล้วเปลี่ยนร้าน' : 'ล้างรายการแล้วออกจากระบบ'}</button><button type="button" className="secondary-action" onClick={() => setLeaving(null)}>อยู่ต่อ</button></div></div>}
+      {leaving && <div className="notice leave-notice" role="group" aria-label="จัดการรายการที่ยังไม่ส่ง" tabIndex={-1} ref={leaveNotice}><h2>ตรวจรายการก่อน{leaving === 'store' ? 'เปลี่ยนร้าน' : 'ออกจากระบบ'}</h2><p>{leaving === 'logout' ? 'ออกจากระบบจะล้างรายการที่ยังไม่ส่งของบัญชีนี้ บิลที่บันทึกแล้วอยู่ในประวัติ' : 'มีรายการที่ยังไม่ส่ง ต้องการเก็บไว้กลับมาทำต่อหรือทิ้งรายการ?'}</p>
+        <div className="actions">{leaving === 'store' && <button type="button" onClick={() => finishLeave(false)}>เก็บไว้แล้วเปลี่ยนร้าน</button>}<button type="button" className={leaving === 'store' ? 'secondary-action' : undefined} onClick={() => finishLeave(true)}>{leaving === 'store' ? 'ทิ้งแล้วเปลี่ยนร้าน' : 'ล้างรายการแล้วออกจากระบบ'}</button><button type="button" className="secondary-action" onClick={() => { setLeaving(null); leaveTrigger.current?.focus() }}>อยู่ต่อ</button></div></div>}
       {selected && me.stores.some(s => s.id === selected) && <fieldset className="workspace-lock" disabled={!!leaving || pending} aria-label="งานหน้าร้าน"><PosWorkspace key={`${me.user.id}:${me.business.id}:${selected}`} me={me} store={me.stores.find(s => s.id === selected)!} onExpired={expired} onWorkChange={setWork} /></fieldset>}
-    </> : <form onSubmit={(event) => void login(event)}>
+    </> : <form className="login-form" onSubmit={(event) => void login(event)}>
       <label htmlFor="username">ชื่อผู้ใช้</label>
       <input id="username" name="username" autoComplete="username" required minLength={3} maxLength={64} disabled={pending} autoCapitalize="none" spellCheck={false} />
       <label htmlFor="password">รหัสผ่าน</label>
       <input id="password" name="password" type="password" autoComplete="current-password" required maxLength={128} disabled={pending} />
       <button type="submit" disabled={pending}>{pending ? 'กำลังตรวจสอบ…' : 'เข้าสู่ระบบ'}</button>
     </form>}
-    <p role="status" aria-live="polite">{blockedLeave && work.pending ? 'กำลังทำรายการหรือมีผลรอยืนยัน กรุณาตรวจผลรายการเดิมก่อนเปลี่ยนร้านหรือออกจากระบบ' : message}</p>
+    <p className="access-status" role="status" aria-live="polite">{blockedLeave && work.pending ? 'กำลังทำรายการหรือมีผลรอยืนยัน กรุณาตรวจผลรายการเดิมก่อนเปลี่ยนร้านหรือออกจากระบบ' : message}</p>
     {!selected && <button type="button" className="secondary-action" disabled={pending} onClick={() => {setPending(true);setMessage('กำลังตรวจสอบบัญชี…');setAttempt((n) => n+1)}}>ตรวจสอบบัญชีอีกครั้ง</button>}
   </section>
 }

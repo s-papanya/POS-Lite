@@ -38,15 +38,15 @@ const server = await createServer({ root: fileURLToPath(new URL('../', import.me
         let raw = ''; for await (const chunk of req) raw += chunk
         const body = raw ? JSON.parse(raw) : {}
         if (path === '/__fixture/state') {
-          if (req.method === 'POST') { scenario = body.scenario; first = true; logged = true; version = 1; price = '3500'; sales = []; received = []; keys = new Map(); saleStores = new Map(); revision = 0; if (scenario.startsWith('history')) seedHistory() }
+          if (req.method === 'POST') { scenario = body.scenario; first = true; logged = !['login', 'login-error'].includes(scenario); version = 1; price = '3500'; sales = []; received = []; keys = new Map(); saleStores = new Map(); revision = 0; if (scenario.startsWith('history')) seedHistory() }
           return json({ scenario, received, sales })
         }
         if (path.endsWith('/health')) return json({ data: { status: 'ok', service: 'family-store-manager-api' } })
         if (path.endsWith('/auth/csrf')) return json({ data: { csrfToken: 'a'.repeat(64) } })
-        if (path.endsWith('/auth/login')) { logged = true; return json({ data: {} }) }
+        if (path.endsWith('/auth/login')) { if (scenario === 'login-error' && first) { first = false; return fail('INVALID_CREDENTIALS', 401) } logged = true; return json({ data: {} }) }
         if (path.endsWith('/auth/logout')) { logged = false; return json({ data: {} }) }
         if (!logged) return fail('AUTH_REQUIRED', 401)
-        if (path.endsWith('/me')) return json({ data: { user, business, businessRole: 'OWNER', stores } })
+        if (path.endsWith('/me')) return json({ data: { user, business, businessRole: 'OWNER', stores: scenario === 'no-stores' ? [] : stores } })
         if (path.endsWith('/products')) return json({ data: scenario === 'empty' ? [] : menu(), page: { nextCursor: null } })
         if (path.endsWith('/accounts')) return json({ data: scenario === 'empty' ? [] : accounts, page: { nextCursor: null } })
         if (path.includes('/business-days/')) return scenario === 'closed' ? json({ data: { id: id(11), businessDate: today(), state: 'CLOSED', revision: '0', openingSnapshots: [] } }) : fail('RESOURCE_NOT_FOUND', 404)
