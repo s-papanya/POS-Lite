@@ -38,6 +38,11 @@ Expense recognition without payment never posts ledger; immediate payment joins 
 Later payment locks the current day then original expense then account, derives the full debt on the server,
 and checks the whole account balance (including all stores sharing a bank) after the account lock.
 Both service checks and the ledger INSERT guard serialize on that same account; no store-filtered balance.
+Transfers lock all configuration gates, then existing days in store order, then the union of target accounts
+and active accounts for missing days in account order before either ensureOpen. This prevents day auto-opening
+from hiding later account locks outside the global order. ExpensesService.postToDay joins the transfer caller
+transaction for a paid fee; it must not claim a key, open a transaction or increment revision itself.
+Transfer owns one revision increment per distinct day, including fees; same-store increments once.
 Money stays integer satang; old bill name/price snapshots remain immutable; refund posts on current open day.
 SalesService.create owns POS/supplemental idempotency and transaction. postToDay joins the caller-owned
 transaction for reconciliation; it must not open a second transaction or commit independently. Its caller must

@@ -20,6 +20,10 @@ full-payment/source-kind deferred guards and an account-locked no-overdraft INSE
 An owner source slot permits both signs only with a deferred kind/amount/actor/exactly-one-movement guard.
 For a trigger shared across tables, branch with PL/pgSQL IF on TG_TABLE_NAME before reading table-specific
 NEW fields; SQL CASE can resolve an absent record field while planning even if that branch is unchosen.
+Transfer ledger slots require non-null OUT/IN legs, unique(transfer_id,leg) and a deferred guard matching
+both legs to source store/day/account/actor and equal principal. CHECK must explicitly reject a null leg,
+not rely on IN() returning NULL. Positive fee headers must reference one fully paid source-store expense
+on the source account with matching amount/time/actor/category; keep its guards and immutability intact.
 D3 must replace unique(expense_id), paid-status and service checks together with reversal-aware active payments.
 Reconciliation guards validate header/line scope, recorded amounts, deltas and linked RECONCILIATION sales;
 when D3 adds refunds/reversals, update both service aggregates and the guard together.

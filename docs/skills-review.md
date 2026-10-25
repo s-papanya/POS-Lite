@@ -122,3 +122,9 @@ signed owner slot ต้องตรง kind/amount/actor, ใช้ PL/pgSQL IF
 และทดสอบ debit source ใหม่แข่งกับ module เดิม ไม่ทดสอบแค่แข่งกับตัวเอง
 quick_validate ผ่าน10skills; canonical/mirror48ไฟล์ตรงทุกbyteและลิงก์74รายการผ่าน
 ไม่ได้ทำ independent skill forward-test; ผล feature/DB tests อยู่ใน owner-transactions-validation.md
+
+D2c2 อัปเดต architecture/api-design/db-migrations/test-validation พร้อมสำเนาเดิม: prelock unionก่อนเปิดหลายวัน,
+ExpensesService.postToDayใช้ caller transaction/revision, fee categoryเป็นOWNER configuration,
+typed transfer legs/null checks/deferred fee matching และทดสอบopposite/auto-open/late incoming-leg failures
+quick_validateผ่าน10skills, canonical/mirror48ไฟล์ตรงทุกbyteและlocal links74รายการผ่าน; ไม่คัดลอกchangelogลงSKILL.md
+ไม่ได้ทำ independent skill forward-test; feature/DB evidenceอยู่ใน transfers-validation.md

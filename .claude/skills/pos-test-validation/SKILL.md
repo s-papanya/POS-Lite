@@ -60,6 +60,9 @@ For expense debits test unpaid/no movement, immediate and later-payment audit fa
 shared-bank no-overdraft and direct SQL guards. Immutable source row locks must work while id=id rewrites fail.
 When another debit source is added, race it against an existing module on one shared bank, not only itself;
 check zero balance is allowed, owner flows leave sales/expenses unchanged, and revoked OWNER fails after a lock wait.
+For transfers exercise opposite directions while both days are absent, failure after auto-opening both days,
+and failure on the incoming leg after paid fee/outgoing writes. Assert all sources/day revisions/keys roll back,
+principal sums0, only fee reduces business money, and same-store revision advances once including the fee.
 Historical closed-day fixtures may be manufactured only by the disposable DB admin and must restore guards;
 they do not prove the application can bypass the separate D4 next-day gate.
 Include shared-bank deduplication, negative refund days and original receiving account vs actual payout account when affected.

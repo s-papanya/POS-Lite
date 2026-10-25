@@ -51,6 +51,10 @@ Before D3, one full payment is allowed; adding reversal requires updating derive
 Owner contribution/withdrawal requires business OWNER, not an assigned MANAGER. Accept positive amount
 and derive signed delta from kind on the server. Never represent capital as a supplemental sale or
 personal withdrawal as an operating expense; both would corrupt reporting categories.
+Transfers require access to both stores before replay; cross-store needs OWNER, intra-store permits MANAGER.
+Canonicalize omitted feeAmount to0. A positive fee uses the existing active category named ค่าธรรมเนียม;
+missing/inactive returns FEE_CATEGORY_REQUIRED409. Only OWNER creates categories via the existing endpoint;
+do not silently create configuration for a MANAGER or accept a guessed fee category from the client.
 Specify CLOSED-day policy and explicit settlement/reopen/current-day refund exceptions.
 Sales/reconciliation accept paired X-Expected-User-Id/X-Expected-Business-Id headers; mismatch403
 SESSION_CONTEXT_CHANGED before key claim. They supplement cookie auth, never replace it.
