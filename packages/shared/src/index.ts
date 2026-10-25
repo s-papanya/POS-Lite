@@ -15,6 +15,7 @@ export interface CsrfResponse { data: { csrfToken: string } }
 export interface Product { id: string; name: string; price: string; version: number; active: boolean }
 export interface ExpenseCategory { id:string; name:string; active:boolean }
 export interface OwnerTransaction {id:string;accountId:string;businessDate:string;occurredAt:string;kind:"CONTRIBUTION" | "WITHDRAWAL";amount:string;note:string}
+export interface AccountTransfer {id:string;sourceStoreId:string;destinationStoreId:string;sourceAccountId:string;destinationAccountId:string;businessDate:string;occurredAt:string;amount:string;feeAmount:string;reason:string;feeExpense:Expense | null}
 export interface ExpensePayment {id:string;expenseId:string;accountId:string;businessDate:string;occurredAt:string;amount:string}
 export interface Expense {id:string;categoryId:string;businessDate:string;occurredAt:string;amount:string;description:string;evidenceReference:string | null;status:"UNPAID" | "PAID";payment:ExpensePayment | null}
 export interface FinancialAccount { id:string; name:string; type:"CASH" | "BANK"; active:boolean; storeIds:string[] }

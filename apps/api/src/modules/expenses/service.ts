@@ -68,15 +68,18 @@ export class ExpensesService {
       const claim=await claimIdempotency<Expense>(client,actor,key,"POST",`/stores/${storeId}/expenses`,input);
       await this.days.access(client,actor,storeId,true);if(claim.replay) return claim.replay;
       const {data:day}=await this.days.ensureOpen(client,actor,storeId,input.businessDate,requestId);
-      if(!(await client.query("SELECT 1 FROM expense_categories WHERE business_id=$1 AND id=$2 AND active",[actor.business_id,input.categoryId])).rowCount) throw new AuthError(404,"RESOURCE_NOT_FOUND");
-      await this.verifyTime(client,input);await this.days.access(client,actor,storeId,true);
-      const expense=(await client.query<{id:string;amount:string;occurred_at:Date}>(`INSERT INTO expenses(business_id,store_id,day_id,category_id,amount,description,evidence_reference,occurred_at,created_by)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,amount::text,occurred_at`,[actor.business_id,storeId,day.id,input.categoryId,input.amount,input.description,input.evidenceReference ?? null,input.occurredAt,actor.user_id])).rows[0]!;
-      if(input.payment) await this.postPayment(client,actor,storeId,day.id,expense,{businessDate:input.businessDate,occurredAt:input.occurredAt,accountId:input.payment.accountId},requestId);
+      const data=await this.postToDay(client,actor,storeId,day.id,input,requestId);
       await client.query("UPDATE business_days SET revision=revision+1 WHERE id=$1",[day.id]);
-      const data=await this.read(client,actor,storeId,expense.id);await this.audit(client,actor,storeId,requestId,"EXPENSE_RECOGNIZED","expense",data);
       const result={status:201,body:{data}};await completeIdempotency(client,claim.id,result);return result;
     });
+  }
+  async postToDay(client:PoolClient,actor:Actor,storeId:string,dayId:string,input:ExpenseRequest,requestId:string) {
+    if(!(await client.query("SELECT 1 FROM expense_categories WHERE business_id=$1 AND id=$2 AND active",[actor.business_id,input.categoryId])).rowCount) throw new AuthError(404,"RESOURCE_NOT_FOUND");
+    await this.verifyTime(client,input);await this.days.access(client,actor,storeId,true);
+    const expense=(await client.query<{id:string;amount:string;occurred_at:Date}>(`INSERT INTO expenses(business_id,store_id,day_id,category_id,amount,description,evidence_reference,occurred_at,created_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,amount::text,occurred_at`,[actor.business_id,storeId,dayId,input.categoryId,input.amount,input.description,input.evidenceReference ?? null,input.occurredAt,actor.user_id])).rows[0]!;
+    if(input.payment) await this.postPayment(client,actor,storeId,dayId,expense,{businessDate:input.businessDate,occurredAt:input.occurredAt,accountId:input.payment.accountId},requestId);
+    const data=await this.read(client,actor,storeId,expense.id);await this.audit(client,actor,storeId,requestId,"EXPENSE_RECOGNIZED","expense",data);return data;
   }
   pay(actor:Actor,storeId:string,expenseId:string,key:string,input:ExpensePaymentRequest,requestId:string) {
     return transaction(this.pool,async(client)=>{

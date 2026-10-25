@@ -71,6 +71,20 @@
       "when": 1792952857974,
       "tag": "0009_owner_transactions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792953704030,
+      "tag": "0010_account_transfers",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792955400992,
+      "tag": "0011_transfer_posting_guards",
+      "breakpoints": true
     }
   ]
 }

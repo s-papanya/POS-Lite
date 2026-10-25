@@ -92,6 +92,11 @@ export const expenseSchema=z.strictObject({id:z.uuid(),categoryId:z.uuid(),busin
 export const expenseResponseSchema=z.strictObject({data:expenseSchema});
 export const expensePaymentResponseSchema=z.strictObject({data:expensePaymentSchema});
 export const expenseListResponseSchema=z.strictObject({data:z.array(expenseSchema).max(100),page:z.strictObject({nextCursor:z.string().nullable()})});
+export const transferRequestSchema=z.strictObject({sourceStoreId:resourceIdSchema,destinationStoreId:resourceIdSchema,sourceAccountId:resourceIdSchema,destinationAccountId:resourceIdSchema,
+  businessDate:businessDateSchema,occurredAt:saleRequestSchema.shape.occurredAt,amount:positiveMoneySchema,feeAmount:nonnegativeMoneySchema.default("0"),reason:z.string().trim().min(1).max(1000)})
+  .refine(v=>v.sourceAccountId!==v.destinationAccountId);
+export type TransferRequest=z.infer<typeof transferRequestSchema>;
+export const transferResponseSchema=z.strictObject({data:z.strictObject({id:z.uuid(),...transferRequestSchema.shape,feeAmount:nonnegativeMoneySchema,feeExpense:expenseSchema.nullable()})});
 const posSaleSchema=z.strictObject({id:z.uuid(),reference:z.string(),kind:z.literal("POS"),businessDate:businessDateSchema,
   occurredAt:z.iso.datetime({offset:true}),gross:positiveMoneySchema,discount:nonnegativeMoneySchema,net:positiveMoneySchema,
   dayRevision:z.string().regex(/^[0-9]+$/),items:z.array(z.strictObject({productId:z.uuid(),nameSnapshot:z.string(),unitPrice:positiveMoneySchema,

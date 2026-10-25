@@ -135,7 +135,7 @@ export const accountOpenings = pgTable("account_openings",{
   check("account_openings_reason",sql`length(trim(${t.reason})) between 1 and 1000`)]);
 export const moneyMovements = pgTable("money_movements",{
   id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),accountId:uuid("account_id").notNull(),
-  accountOpeningId:uuid("account_opening_id"),salePaymentId:uuid("sale_payment_id"),expensePaymentId:uuid("expense_payment_id"),ownerTransactionId:uuid("owner_transaction_id"),dayId:uuid("day_id"),delta:bigint("delta",{mode:"bigint"}).notNull(),
+  accountOpeningId:uuid("account_opening_id"),salePaymentId:uuid("sale_payment_id"),expensePaymentId:uuid("expense_payment_id"),ownerTransactionId:uuid("owner_transaction_id"),transferId:uuid("transfer_id"),leg:text("leg"),dayId:uuid("day_id"),delta:bigint("delta",{mode:"bigint"}).notNull(),
   createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
 },(t)=>[unique("money_movements_opening_uq").on(t.accountOpeningId),
   unique("money_movements_payment_uq").on(t.salePaymentId),
@@ -144,12 +144,33 @@ export const moneyMovements = pgTable("money_movements",{
   foreignKey({columns:[t.businessId,t.storeId,t.dayId,t.accountId,t.expensePaymentId],foreignColumns:[expensePayments.businessId,expensePayments.storeId,expensePayments.dayId,expensePayments.accountId,expensePayments.id],name:"money_movements_expense_fk"}),
   unique("money_movements_owner_uq").on(t.ownerTransactionId),
   foreignKey({columns:[t.businessId,t.storeId,t.dayId,t.accountId,t.ownerTransactionId],foreignColumns:[ownerTransactions.businessId,ownerTransactions.storeId,ownerTransactions.dayId,ownerTransactions.accountId,ownerTransactions.id],name:"money_movements_owner_fk"}),
-  check("money_movements_source",sql`num_nonnulls(${t.accountOpeningId},${t.salePaymentId},${t.expensePaymentId},${t.ownerTransactionId})=1 and ((${t.accountOpeningId} is not null and ${t.dayId} is null) or (${t.accountOpeningId} is null and ${t.dayId} is not null))`),
+  unique("money_movements_transfer_uq").on(t.transferId,t.leg),
+  foreignKey({columns:[t.businessId,t.transferId],foreignColumns:[accountTransfers.businessId,accountTransfers.id],name:"money_movements_transfer_fk"}),
+  check("money_movements_leg",sql`(${t.transferId} is null and ${t.leg} is null) or (${t.transferId} is not null and ${t.leg} is not null and ${t.leg} in ('OUT','IN'))`),
+  check("money_movements_source",sql`num_nonnulls(${t.accountOpeningId},${t.salePaymentId},${t.expensePaymentId},${t.ownerTransactionId},${t.transferId})=1 and ((${t.accountOpeningId} is not null and ${t.dayId} is null) or (${t.accountOpeningId} is null and ${t.dayId} is not null))`),
   foreignKey({columns:[t.businessId,t.storeId,t.accountId,t.accountOpeningId],
     foreignColumns:[accountOpenings.businessId,accountOpenings.storeId,accountOpenings.accountId,accountOpenings.id],name:"money_movements_opening_scope_fk"}),
   foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"money_movements_actor_fk"}),
-  check("money_movements_delta",sql`(${t.expensePaymentId} is not null and ${t.delta} between -9000000000000 and -1) or (${t.ownerTransactionId} is not null and ${t.delta} between -9000000000000 and 9000000000000 and ${t.delta}<>0) or (${t.expensePaymentId} is null and ${t.ownerTransactionId} is null and ${t.delta} between 1 and 9000000000000)`),
+  check("money_movements_delta",sql`(${t.expensePaymentId} is not null and ${t.delta} between -9000000000000 and -1) or ((${t.ownerTransactionId} is not null or ${t.transferId} is not null) and ${t.delta} between -9000000000000 and 9000000000000 and ${t.delta}<>0) or (${t.expensePaymentId} is null and ${t.ownerTransactionId} is null and ${t.transferId} is null and ${t.delta} between 1 and 9000000000000)`),
   index("money_movements_balance_idx").on(t.businessId,t.accountId,t.createdAt,t.id)]);
+
+export const accountTransfers = pgTable("account_transfers",{
+  id:id(),businessId:uuid("business_id").notNull(),sourceStoreId:uuid("source_store_id").notNull(),destinationStoreId:uuid("destination_store_id").notNull(),
+  sourceDayId:uuid("source_day_id").notNull(),destinationDayId:uuid("destination_day_id").notNull(),sourceAccountId:uuid("source_account_id").notNull(),destinationAccountId:uuid("destination_account_id").notNull(),
+  amount:bigint("amount",{mode:"bigint"}).notNull(),feeAmount:bigint("fee_amount",{mode:"bigint"}).notNull().default(sql`0`),feeExpenseId:uuid("fee_expense_id"),reason:text("reason").notNull(),
+  occurredAt:timestamp("occurred_at",{withTimezone:true}).notNull(),createdAt:createdAt(),createdBy:uuid("created_by").notNull(),
+},(t)=>[unique("account_transfers_scope_uq").on(t.businessId,t.id),unique("account_transfers_fee_uq").on(t.feeExpenseId),
+  foreignKey({columns:[t.businessId,t.sourceStoreId,t.sourceDayId],foreignColumns:[businessDays.businessId,businessDays.storeId,businessDays.id],name:"account_transfers_source_day_fk"}),
+  foreignKey({columns:[t.businessId,t.destinationStoreId,t.destinationDayId],foreignColumns:[businessDays.businessId,businessDays.storeId,businessDays.id],name:"account_transfers_destination_day_fk"}),
+  foreignKey({columns:[t.businessId,t.sourceStoreId,t.sourceAccountId],foreignColumns:[accountStores.businessId,accountStores.storeId,accountStores.accountId],name:"account_transfers_source_account_fk"}),
+  foreignKey({columns:[t.businessId,t.destinationStoreId,t.destinationAccountId],foreignColumns:[accountStores.businessId,accountStores.storeId,accountStores.accountId],name:"account_transfers_destination_account_fk"}),
+  foreignKey({columns:[t.businessId,t.sourceStoreId,t.feeExpenseId],foreignColumns:[expenses.businessId,expenses.storeId,expenses.id],name:"account_transfers_fee_fk"}),
+  foreignKey({columns:[t.businessId,t.createdBy],foreignColumns:[businessMemberships.businessId,businessMemberships.userId],name:"account_transfers_actor_fk"}),
+  check("account_transfers_amount",sql`${t.amount} between 1 and 9000000000000 and ${t.feeAmount} between 0 and 9000000000000`),
+  check("account_transfers_accounts",sql`${t.sourceAccountId}<>${t.destinationAccountId}`),
+  check("account_transfers_fee",sql`(${t.feeAmount}=0 and ${t.feeExpenseId} is null) or (${t.feeAmount}>0 and ${t.feeExpenseId} is not null)`),
+  check("account_transfers_reason",sql`length(trim(${t.reason})) between 1 and 1000`),
+  index("account_transfers_source_idx").on(t.businessId,t.sourceDayId),index("account_transfers_destination_idx").on(t.businessId,t.destinationDayId)]);
 
 export const ownerTransactions = pgTable("owner_transactions",{
   id:id(),businessId:uuid("business_id").notNull(),storeId:uuid("store_id").notNull(),dayId:uuid("day_id").notNull(),accountId:uuid("account_id").notNull(),

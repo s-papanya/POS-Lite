@@ -13,6 +13,7 @@ import { salesRouter } from "./modules/sales/routes.js";
 import { expenseCategoriesRouter } from "./modules/expenses/categories.routes.js";
 import { expensesRouter } from "./modules/expenses/routes.js";
 import { ownerTransactionsRouter } from "./modules/owner-transactions/routes.js";
+import { transfersRouter } from "./modules/transfers/routes.js";
 
 export function createApp({ logger, config, auth }: { logger: Logger; config: AppConfig; auth?: AuthService }) {
   const app = express();
@@ -39,6 +40,7 @@ export function createApp({ logger, config, auth }: { logger: Logger; config: Ap
   if (auth) app.use("/api/v1", expenseCategoriesRouter(auth));
   if (auth) app.use("/api/v1", expensesRouter(auth));
   if (auth) app.use("/api/v1", ownerTransactionsRouter(auth));
+  if (auth) app.use("/api/v1", transfersRouter(auth));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
