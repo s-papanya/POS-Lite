@@ -114,3 +114,11 @@ caller-owned transaction, recognition/payment dates แยกกัน และ
 และตรวจ transitive lock graph เพราะผู้รอตัวที่สองอาจรอคนแรก ไม่ได้รอ blocker โดยตรง
 บันทึก D3 active-payment/reversal gap และ fixture historical day ไม่ถือว่าผ่าน D4
 quick_validate ผ่าน10skills, canonical/mirror48ไฟล์ตรงทุกbyte, ลิงก์74รายการผ่าน; ไม่มี independent skill forward-test เพิ่ม
+
+## D2c1 — 26 ตุลาคม 2026
+
+ปรับ api-design/db-migrations/test-validation และสำเนาเดิม: OWNER flows แยกจาก sales/operating expenses,
+signed owner slot ต้องตรง kind/amount/actor, ใช้ PL/pgSQL IF ก่อนอ่าน NEW fields ของแต่ละตารางใน shared trigger
+และทดสอบ debit source ใหม่แข่งกับ module เดิม ไม่ทดสอบแค่แข่งกับตัวเอง
+quick_validate ผ่าน10skills; canonical/mirror48ไฟล์ตรงทุกbyteและลิงก์74รายการผ่าน
+ไม่ได้ทำ independent skill forward-test; ผล feature/DB tests อยู่ใน owner-transactions-validation.md

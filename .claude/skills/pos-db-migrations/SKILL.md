@@ -16,7 +16,10 @@ PostgreSQL row locks require UPDATE on at least one column: expenses grants UPDA
 with an unconditional immutable trigger rejecting every UPDATE/DELETE, including id=id. Never grant broad
 UPDATE to solve a lock permission error; verify both the lock and denied rewrites with the runtime role.
 New debit sources need typed composite ledger FKs, exactly-one-source checks, correct signed amounts,
-full-payment deferred guards and an account-locked no-overdraft INSERT guard. Preserve existing credit guards.
+full-payment/source-kind deferred guards and an account-locked no-overdraft INSERT guard. Preserve existing credit guards.
+An owner source slot permits both signs only with a deferred kind/amount/actor/exactly-one-movement guard.
+For a trigger shared across tables, branch with PL/pgSQL IF on TG_TABLE_NAME before reading table-specific
+NEW fields; SQL CASE can resolve an absent record field while planning even if that branch is unchosen.
 D3 must replace unique(expense_id), paid-status and service checks together with reversal-aware active payments.
 Reconciliation guards validate header/line scope, recorded amounts, deltas and linked RECONCILIATION sales;
 when D3 adds refunds/reversals, update both service aggregates and the guard together.

@@ -48,6 +48,9 @@ Expense recognition date and actual payment date differ; list filters use recogn
 carry account/date/time, not a client amount. Unpaid creates no movement; immediate payment is atomic.
 Stored creation replay remains its original snapshot after later payment; use GET for current status.
 Before D3, one full payment is allowed; adding reversal requires updating derived status and uniqueness together.
+Owner contribution/withdrawal requires business OWNER, not an assigned MANAGER. Accept positive amount
+and derive signed delta from kind on the server. Never represent capital as a supplemental sale or
+personal withdrawal as an operating expense; both would corrupt reporting categories.
 Specify CLOSED-day policy and explicit settlement/reopen/current-day refund exceptions.
 Sales/reconciliation accept paired X-Expected-User-Id/X-Expected-Business-Id headers; mismatch403
 SESSION_CONTEXT_CHANGED before key claim. They supplement cookie auth, never replace it.
