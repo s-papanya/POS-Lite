@@ -66,7 +66,7 @@ for path, methods in doc["paths"].items():
                     "/accounts", "/accounts/{accountId}", "/accounts/{accountId}/opening", "/stores/{storeId}/accounts",
                     "/stores/{storeId}/business-days", "/stores/{storeId}/business-days/{date}",
                     "/stores/{storeId}/sales", "/stores/{storeId}/sales/{saleId}", "/stores/{storeId}/supplemental-sales", "/expense-categories",
-                    "/stores/{storeId}/expenses", "/stores/{storeId}/expenses/{expenseId}/payments", "/stores/{storeId}/owner-transactions"}:
+                    "/stores/{storeId}/expenses", "/stores/{storeId}/expenses/{expenseId}/payments", "/stores/{storeId}/owner-transactions", "/account-transfers"}:
             assert operation["x-implemented"] is True
             if method != "get":
                 assert {"X-CSRF-Token", "Origin", "Idempotency-Key"} <= headers

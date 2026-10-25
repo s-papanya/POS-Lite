@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Family Store Manager core design contract",
-    "version": "0.12.0",
-    "description": "F1/F2, S1a-c, S2, D1a-b, D2a-b and D2c1 owner flows implemented. Transfer, refund/closing remain design only. See api-contracts.md."
+    "version": "0.13.0",
+    "description": "F1/F2, S1a-c, S2, D1a-b and D2a-c2 money APIs implemented. Refund/closing remain design only. See api-contracts.md."
   },
   "servers": [
     {
@@ -4403,6 +4403,164 @@
         },
         "description": "OWNER only; positive satang amount, signed ledger effect derived from kind. Current Bangkok OPEN day, active mapped/opened account and no overdraft. Source/movement/audit/key atomic; revision+1. Does not change sales or operating expenses. No generic history or reversal endpoint yet."
       }
+    },
+    "/account-transfers": {
+      "post": {
+        "operationId": "createAccountTransfer",
+        "x-implemented": true,
+        "x-permissions": [
+          "OWNER",
+          "MANAGER"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Text"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "X-Expected-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
+            "name": "X-Expected-Business-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Send both expected identity headers together. Mismatch rejects with 403 SESSION_CONTEXT_CHANGED before idempotency claim."
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Committed transfer and optional paid fee expense or original replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/FEE_CATEGORY_REQUIRED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/FEE_CATEGORY_REQUIRED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/FEE_CATEGORY_REQUIRED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/FEE_CATEGORY_REQUIRED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/FEE_CATEGORY_REQUIRED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/FEE_CATEGORY_REQUIRED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/FEE_CATEGORY_REQUIRED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/FEE_CATEGORY_REQUIRED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Different accounts in one business. OWNER for cross-store; assigned MANAGER may transfer within one store. Both days current Bangkok OPEN; lock all configuration gates, existing days, then union of target/auto-open accounts in ID order. Principal OUT/IN sums0; source must cover amount+fee. Positive fee uses existing active category named ค่าธรรมเนียม created by OWNER, otherwise409. Fee recognition/payment and both legs atomic; revision+1 per distinct day. No history/reversal/UI here."
+      }
     }
   },
   "components": {
@@ -6742,6 +6900,126 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/OwnerTransaction"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "TransferRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sourceStoreId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "destinationStoreId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "sourceAccountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "destinationAccountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/ExpenseAmount"
+          },
+          "feeAmount": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,12})$",
+            "description": "THB satang. Exact maximum 9000000000000 checked by service.",
+            "default": "0"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Text"
+          }
+        },
+        "required": [
+          "sourceStoreId",
+          "destinationStoreId",
+          "sourceAccountId",
+          "destinationAccountId",
+          "businessDate",
+          "occurredAt",
+          "amount",
+          "reason"
+        ]
+      },
+      "AccountTransfer": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "sourceStoreId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "destinationStoreId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "sourceAccountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "destinationAccountId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "businessDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/ExpenseAmount"
+          },
+          "feeAmount": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,12})$",
+            "description": "THB satang. Exact maximum 9000000000000 checked by service.",
+            "default": "0"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Text"
+          },
+          "feeExpense": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Expense"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "sourceStoreId",
+          "destinationStoreId",
+          "sourceAccountId",
+          "destinationAccountId",
+          "businessDate",
+          "occurredAt",
+          "amount",
+          "feeAmount",
+          "reason",
+          "feeExpense"
+        ]
+      },
+      "TransferResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AccountTransfer"
           }
         },
         "required": [

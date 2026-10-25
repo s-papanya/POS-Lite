@@ -16,7 +16,8 @@ D1a API “เพิ่มยอดที่ยังไม่ได้บัน
 D1c หน้ากรอกสอง flow เพิ่มแล้ว พร้อม draft/review/กู้รายการค้าง ดู [ผลตรวจหน้าจอ](docs/daily-ui-validation.md)
 D2a API หมวดรายจ่ายเพิ่มแล้ว พร้อมสิทธิ์และป้องกันชื่อซ้ำ ดู [ผลตรวจ](docs/expense-categories-validation.md)
 D2b API รายจ่ายค้างจ่าย/จ่ายทันที/ชำระเต็มเพิ่มแล้ว พร้อมป้องกันจ่ายซ้ำและบัญชีติดลบ ดู [ผลตรวจ](docs/expenses-validation.md); หน้าจอเงินออกยังรอพัฒนา
-D2c1 API เติมทุน/ถอนเงินเจ้าของเพิ่มแล้ว เฉพาะ OWNER และแยกจากยอดขาย/รายจ่าย ดู [ผลตรวจ](docs/owner-transactions-validation.md); โอนพร้อมค่าธรรมเนียมยังรอ
+D2c1 API เติมทุน/ถอนเงินเจ้าของเพิ่มแล้ว เฉพาะ OWNER และแยกจากยอดขาย/รายจ่าย ดู [ผลตรวจ](docs/owner-transactions-validation.md)
+D2c2 API โอนพร้อมค่าธรรมเนียมเพิ่มแล้ว ดู [ผลตรวจ](docs/transfers-validation.md); หน้าจอเงินออก/โอนยังรอ
 
 | ส่วน | สิ่งที่มีตอนนี้ |
 |---|---|
@@ -83,6 +84,10 @@ npm run dev
 API และ Vite proxy ปัจจุบันใช้พอร์ต `3000` ตรงกัน
 หากตั้ง environment variable `PORT` เป็นค่าอื่น ต้องปรับ proxy ใน `apps/web/vite.config.ts` ให้ตรงกัน
 API bind ที่ `127.0.0.1` การเปิดจากมือถือผ่านเครือข่ายยังต้องตั้งค่า dev เพิ่ม
+หากเครื่องนี้ตั้งค่า `.env`/dependencies แล้ว ให้ใช้ `npm run db:up`, `npm run db:migrate`, `npm run db:seed`, `npm run dev` ได้เลย ไม่ต้องคัดลอก `.env` ทับ
+เข้าระบบและเลือกร้านได้ก่อน แต่ร้านว่างต้องเพิ่มเมนูผ่าน POST `/stores/:storeId/products`, บัญชีผ่าน POST `/accounts`
+และยอดตั้งต้นผ่าน POST `/accounts/:accountId/opening` ก่อนขาย; ปัจจุบันยังไม่มีหน้าจอจัดการข้อมูลตั้งต้นเหล่านี้
+รายจ่าย/เงินเจ้าของ/โอนเป็น API เท่านั้น; fee>0 ต้องมีหมวดชื่อ `ค่าธรรมเนียม` ที่ OWNER สร้างผ่าน POST `/expense-categories`
 API โหลด .env ที่ root; ค่าจาก shell มีลำดับสูงกว่าไฟล์
 health หมายถึง process ทำงาน ไม่ได้ยืนยันฐานข้อมูล/login/POS
 
@@ -95,7 +100,7 @@ health หมายถึง process ทำงาน ไม่ได้ยืน
 | `npm run dev:web` | เปิด Vite dev server |
 | `npm run typecheck` | ตรวจ TypeScript ของ API/tests และเว็บ โดย build shared packages ก่อน |
 | `npm run lint` | ตรวจ API/tests/shared packages และเว็บ |
-| `npm test` | รัน Vitest/Supertest ของ Foundation |
+| `npm test` | รัน Vitest unit/HTTP contracts และเว็บ; PostgreSQL integration แยกคำสั่ง |
 | `npm run test:db` | Vitest integration บน PostgreSQL ชั่วคราวที่สร้างและตรวจ ownership เอง |
 | `npm run build` | build shared/validation → API → เว็บ แบบไม่ข้าม workspace |
 | `npm run start -w api` | รัน API จาก dist หลัง build |
@@ -106,7 +111,7 @@ health หมายถึง process ทำงาน ไม่ได้ยืน
 | `npm run db:seed` | สร้าง OWNER สองบัญชีและสองร้าน; รันซ้ำไม่ reset รหัสผ่าน |
 | `npm run db:down` | หยุด container โดยเก็บ named volume ไว้ |
 
-API tests ตรวจ config/HTTP และ auth/store isolation บน PostgreSQL จริง ยังไม่ใช่ acceptance A–P ด้านธุรกรรมเงิน
+API tests ครอบคลุม config/auth/store isolation และธุรกรรมที่ implement แล้ว; ยังไม่ผ่าน acceptance A–P ครบทั้งระบบหรือ Android จริง
 หากแก้ shared/validation ระหว่าง dev ให้ restart `npm run dev` เพื่อ build packages ใหม่
 CI/deployment pipeline ยังไม่มี; คำสั่ง DB ปัจจุบันปฏิเสธ target ที่ไม่ใช่ local dev
 PostgreSQL local ฟังที่ `127.0.0.1:5433`, DB `pos_lite_dev`; migration ใช้ `pos_lite_local`, API ใช้ `pos_lite_app`

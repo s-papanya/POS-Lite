@@ -3,7 +3,7 @@
 สถานะ A–P: **ยังไม่ผ่านครบทุก module**; S2 มี local PostgreSQL หลักฐานด้าน A/E/M/N/P ของ POS แล้ว
 ดู [sales-validation.md](sales-validation.md); reconciliation มี [ผลตรวจ D1b](reconciliation-validation.md)
 และ H รายจ่ายมี [ผลตรวจ D2b](expenses-validation.md); Closing/refund และ Android จริงยังรอ
-I เติมทุน/ถอนมี [ผลตรวจ D2c1](owner-transactions-validation.md); J transfer/fee ยังรอ
+I เติมทุน/ถอนมี [ผลตรวจ D2c1](owner-transactions-validation.md); J transfer/fee มี [ผลตรวจ D2c2](transfers-validation.md)
 F1 มี runtime config/HTTP tests แยกแล้ว ดู [หลักฐาน Foundation](foundation-validation.md)
 จำนวนเงินในคำอธิบายเป็นบาท; fixtures แปลงเป็นสตางค์
 integration ต้องใช้ PostgreSQL จริงคนละ connection สำหรับ concurrency ไม่ mock locks

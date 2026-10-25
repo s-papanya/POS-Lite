@@ -3,7 +3,8 @@
 Base `/api/v1`; JSON UTF-8; UUID identifiers; amount เป็น integer string หน่วยสตางค์
 D2a implement GET/POST `/expense-categories` แล้ว ดู [ผลตรวจหมวดรายจ่าย](expense-categories-validation.md)
 D2b implement POST/GET `/stores/:storeId/expenses` และ POST `/stores/:storeId/expenses/:id/payments` แล้ว ดู [ผลตรวจรายจ่าย](expenses-validation.md)
-D2c1 implement POST `/stores/:storeId/owner-transactions` แล้ว ดู [ผลตรวจเงินเจ้าของ](owner-transactions-validation.md); transfer ยังไม่ implement
+D2c1 implement POST `/stores/:storeId/owner-transactions` แล้ว ดู [ผลตรวจเงินเจ้าของ](owner-transactions-validation.md)
+D2c2 implement POST `/account-transfers` แล้ว ดู [ผลตรวจโอนเงิน](transfers-validation.md); ยังไม่มี UI เงินออก/โอน
 S2 implement POST/GET /stores/:storeId/sales และ GET /stores/:storeId/sales/:saleId แล้ว ดู [sales-validation.md](sales-validation.md)
 day revision/expectedRevision เป็น nonnegative integer string รองรับ PostgreSQL BIGINT โดยไม่เสีย precision; product version ยังเป็น integer
 F1 health และ F2 `/auth/*`, `/me`, GET `/stores`, GET `/stores/:storeId` implement แล้ว
@@ -164,7 +165,7 @@ closing count `{accountId,counted,reason?}`; expected/variance server คำน�
 | GET /stores/:storeId/expenses | O/M | from,to,status?,limit?,cursor? → expenses,page | implement D2b; status ALL(default)/PAID/UNPAID derive payment; reversal ยังรอ D3 |
 | POST /stores/:storeId/expenses/:id/payments | O/M | businessDate,occurredAt,accountId → payment | implement D2b; amount server จาก expense; lock expense; ALREADY_PAID 409; วัน expense ปิดได้แต่วัน payment ต้อง OPEN |
 | POST /stores/:storeId/owner-transactions | O | businessDate,occurredAt,accountId,kind,amount,note → transaction | implement D2c1; kind CONTRIBUTION/WITHDRAWAL, amount บวก, note1–1000; source+movement+audit+key atomic; CLOSED ปฏิเสธ |
-| POST /account-transfers | O หรือ M ตาม matrix | sourceStoreId,destinationStoreId,businessDate,occurredAt,sourceAccountId,destinationAccountId,amount,feeAmount?,reason → transfer,feeExpense? | tx ล็อกสองวัน+บัญชี; วันทั้งสอง OPEN; fee>=0 แยกหมวดค่าธรรมเนียม; ห้ามบัญชีเดิม |
+| POST /account-transfers | O หรือ M ตาม matrix | sourceStoreId,destinationStoreId,businessDate,occurredAt,sourceAccountId,destinationAccountId,amount,feeAmount?,reason → transfer | implement D2c2; tx ล็อกสองวัน+บัญชี; วันทั้งสอง OPEN; fee>=0 default0; หมวดชื่อ ค่าธรรมเนียม ต้อง active; ห้ามบัญชีเดิม |
 | GET /stores/:storeId/history | O/M | from,to,kind,cursor → transactions | รวม sales/expenses/owner/transfer/refund/close/reversal; S ใช้ sale history |
 | GET /stores/:storeId/reports/daily | O/M | from,to → sales,refunds,expensesRecognized,expensePaid,ownerFlows,transferFlows,variance | แยก actual cash flows/attributed sales; วันปิดอ่านได้ |
 | GET /reports/business | O | from,to → consolidated metrics,accountBalances | เงินบัญชีจริงรวม unique accounts ครั้งเดียว; eliminate internal transfers; fees เป็นรายจ่าย |
@@ -185,6 +186,13 @@ D2c1: owner response `{id,accountId,businessDate,occurredAt,kind,amount,note}`; 
 OWNER เท่านั้น แม้ MANAGER มีสิทธิ์ใช้บัญชีร้านก็เติมทุน/ถอนไม่ได้; ตรวจซ้ำหลัง key/account waits ก่อน post/replay
 วัน/เวลาปัจจุบัน Bangkok OPEN, account active/mapped/cutover แล้ว; withdrawal เงินไม่พอ409 `INSUFFICIENT_FUNDS`, เหลือ0ได้
 revision+1ต่อ action; เติมทุนไม่ใช่ยอดขาย ถอนใช้ส่วนตัวไม่ใช่รายจ่าย; ไม่มี GET history/รายงานรวม/ย้อนรายการในก้อนนี้
+
+D2c2: O โอนข้ามร้านได้, M โอนได้เฉพาะภายในร้านที่ assigned; ตรวจ current access ทั้งสองร้านก่อน replay และหลัง waits
+positive amount, feeAmount nonnegative/default0 canonical; บัญชีต้องต่างกัน/mapped/active/opening พร้อม/cutover; ทั้งสองวัน current Bangkok OPEN
+ตรวจยอดบัญชีต้นทางทั้ง identity >= amount+fee; principal OUT/IN เท่ากัน; fee สร้าง expense+payment จากบัญชีต้นทางผ่าน caller-owned transaction
+fee>0 ต้องมีหมวดรายจ่ายชื่อ `ค่าธรรมเนียม` ที่ OWNER สร้างด้วย POST /expense-categories; ไม่สร้างหมวดแทน MANAGER, หากไม่มี/ไม่ active409 FEE_CATEGORY_REQUIRED
+response `{data:{id,...request,feeAmount,feeExpense:null|Expense}}`; feeExpense เป็น PAID; revision+1ต่อ distinct day รวม feeใน actionเดียว
+same-store เพิ่ม revisionครั้งเดียว; zero feeไม่มี expense/payment; keyเดิมคืน original status/body รวม feeExpense เดิม; ไม่มี transfer history/reversal/UI ในก้อนนี้
 
 ## ตรวจสัญญากับ implementation
 

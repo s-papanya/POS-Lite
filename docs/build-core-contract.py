@@ -415,8 +415,21 @@ paths["/stores/{storeId}/owner-transactions"] = {"post": {"operationId": "create
     "requestBody": {"required": True, "content": {"application/json": {"schema": ref("OwnerTransactionRequest")}}}, "responses": responses,
     "description": "OWNER only; positive satang amount, signed ledger effect derived from kind. Current Bangkok OPEN day, active mapped/opened account and no overdraft. Source/movement/audit/key atomic; revision+1. Does not change sales or operating expenses. No generic history or reversal endpoint yet."}}
 
-document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.12.0",
-    "description": "F1/F2, S1a-c, S2, D1a-b, D2a-b and D2c1 owner flows implemented. Transfer, refund/closing remain design only. See api-contracts.md."},
+SCHEMAS["TransferRequest"] = obj({"sourceStoreId": ref("Id"), "destinationStoreId": ref("Id"), "sourceAccountId": ref("Id"), "destinationAccountId": ref("Id"),
+    "businessDate": ref("Date"), "occurredAt": ref("Time"), "amount": ref("ExpenseAmount"), "feeAmount": {**SCHEMAS["Money"], "default": "0"}, "reason": ref("Text")}, ("feeAmount",))
+SCHEMAS["AccountTransfer"] = obj({"id": ref("Id"), **SCHEMAS["TransferRequest"]["properties"], "feeExpense": {"oneOf": [ref("Expense"), {"type": "null"}]}})
+SCHEMAS["TransferResponse"] = obj({"data": ref("AccountTransfer")})
+responses = {"201": {"description": "Committed transfer and optional paid fee expense or original replay", "content": {"application/json": {"schema": ref("TransferResponse")}}}}
+for code in ["400", "401", "403", "404", "409", "413", "422", "500"]:
+    responses[code] = {"description": "Standard error;409 INSUFFICIENT_FUNDS/DAY_CLOSED/PREVIOUS_DAY_UNSETTLED/FEE_CATEGORY_REQUIRED/IDEMPOTENCY_CONFLICT;422 invalid date/account",
+        "content": {"application/json": {"schema": ref("Error")}}}
+paths["/account-transfers"] = {"post": {"operationId": "createAccountTransfer", "x-implemented": True, "x-permissions": ["OWNER", "MANAGER"],
+    "parameters": [p for p in post["parameters"] if p["name"] in ["Origin", "X-CSRF-Token", "Idempotency-Key", "X-Expected-User-Id", "X-Expected-Business-Id"]],
+    "requestBody": {"required": True, "content": {"application/json": {"schema": ref("TransferRequest")}}}, "responses": responses,
+    "description": "Different accounts in one business. OWNER for cross-store; assigned MANAGER may transfer within one store. Both days current Bangkok OPEN; lock all configuration gates, existing days, then union of target/auto-open accounts in ID order. Principal OUT/IN sums0; source must cover amount+fee. Positive fee uses existing active category named ค่าธรรมเนียม created by OWNER, otherwise409. Fee recognition/payment and both legs atomic; revision+1 per distinct day. No history/reversal/UI here."}}
+
+document = {"openapi": "3.1.0", "info": {"title": "Family Store Manager core design contract", "version": "0.13.0",
+    "description": "F1/F2, S1a-c, S2, D1a-b and D2a-c2 money APIs implemented. Refund/closing remain design only. See api-contracts.md."},
     "servers": [{"url": "/api/v1"}], "security": [{"sessionCookie": []}], "paths": paths,
     "components": {"securitySchemes": {"sessionCookie": {"type": "apiKey", "in": "cookie", "name": "__Host-session"}}, "schemas": SCHEMAS}}
 if __name__ == "__main__":
