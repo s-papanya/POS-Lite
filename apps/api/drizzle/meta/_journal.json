@@ -64,6 +64,13 @@
       "when": 1792880112741,
       "tag": "0008_expenses",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792952857974,
+      "tag": "0009_owner_transactions",
+      "breakpoints": true
     }
   ]
 }

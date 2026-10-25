@@ -80,6 +80,11 @@ export const expenseRequestSchema=z.strictObject({businessDate:businessDateSchem
   evidenceReference:z.string().trim().min(1).max(1000).optional(),payment:z.strictObject({accountId:resourceIdSchema}).optional()});
 export type ExpenseRequest=z.infer<typeof expenseRequestSchema>;
 export type ExpensePaymentRequest=z.infer<typeof expensePaymentRequestSchema>;
+export const ownerTransactionRequestSchema=z.strictObject({businessDate:businessDateSchema,occurredAt:saleRequestSchema.shape.occurredAt,
+  accountId:resourceIdSchema,kind:z.enum(["CONTRIBUTION","WITHDRAWAL"]),amount:positiveMoneySchema,note:z.string().trim().min(1).max(1000)});
+export type OwnerTransactionRequest=z.infer<typeof ownerTransactionRequestSchema>;
+export const ownerTransactionSchema=z.strictObject({id:z.uuid(),...ownerTransactionRequestSchema.shape});
+export const ownerTransactionResponseSchema=z.strictObject({data:ownerTransactionSchema});
 export const expensePaymentSchema=z.strictObject({id:z.uuid(),expenseId:z.uuid(),accountId:z.uuid(),businessDate:businessDateSchema,
   occurredAt:z.iso.datetime({offset:true}),amount:positiveMoneySchema});
 export const expenseSchema=z.strictObject({id:z.uuid(),categoryId:z.uuid(),businessDate:businessDateSchema,occurredAt:z.iso.datetime({offset:true}),

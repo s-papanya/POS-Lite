@@ -27,6 +27,7 @@ import { supplementalChecks } from "./supplemental-checks.js";
 import { reconciliationChecks } from "./reconciliation-checks.js";
 import { expenseCategoryChecks } from "./expense-category-checks.js";
 import { expenseChecks } from "./expense-checks.js";
+import { ownerTransactionChecks } from "./owner-transaction-checks.js";
 
 it("verifies migrations, seed, tenant constraints and runtime privileges on disposable PostgreSQL", async () => {
   config({ path: fileURLToPath(new URL("../../../.env", import.meta.url)), quiet: true });
@@ -128,7 +129,7 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
         assert.match(fixture.slice(resolve(temporaryRoot).length),/^[/\\]migration-fixture-[a-f0-9-]{36}$/);
         await rm(fixture,{recursive:true});
       }
-      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 9);
+      assert.equal((await db!.query("SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations")).rows[0].n, 10);
     });
     await grantRuntimeAccess(db);
     const runtimeTarget = new URL(process.env.DATABASE_URL!); runtimeTarget.pathname = `/${name}`;
@@ -478,6 +479,7 @@ it("verifies migrations, seed, tenant constraints and runtime privileges on disp
     await reconciliationChecks(db,runtime,auth,app,check);
     await expenseCategoryChecks(db,runtime,auth,app,check);
     await expenseChecks(db,runtime,auth,app,check);
+    await ownerTransactionChecks(db,runtime,auth,app,check);
     console.log(`${checks} database integration checks passed`);
   } finally {
     await runtime?.end();
